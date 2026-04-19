@@ -1,0 +1,13 @@
+{
+  "messages": [
+    {
+      "id": "msg_seed_001",
+      "recipient_id": "person_carol",
+      "project_id": "proj_seed_alpha",
+      "subject": "Kickoff",
+      "body": "Project alpha is kicking off this week. You are the PM.",
+      "sent_at": "2026-04-15T09:00:00+00:00",
+      "status": "sent"
+    }
+  ]
+}
