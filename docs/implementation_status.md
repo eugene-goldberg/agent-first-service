@@ -39,7 +39,7 @@ _Deviation note: `tests/services/people/conftest.py` is deferred from Task 1 to 
 - [ ] Task 11: Communications service — filters and constraint errors
 - [ ] Task 12: Communications service — seed loader
 - [x] Task 13: Wire up Makefile + env + documentation
-- [ ] Task 14: Full regression and live smoke test
+- [x] Task 14: Full regression and live smoke test
 
 ## 2026-04-19 — Leaf services increment (Plan 2 complete)
 
@@ -51,7 +51,7 @@ _Deviation note: `tests/services/people/conftest.py` is deferred from Task 1 to 
 - Makefile targets: `run-people`, `run-communications`, `test-people`, `test-communications`, `test-leaf-services`.
 - Note: `agent_protocol/` was extended mid-Plan-2 (commit `95b9b80`) to add `try_instead` dict support; Tasks 4/5/10/11 adapted using string-vs-dict pattern for `try_instead` field compatibility.
 
-**Evidence:** see Task 14 Step 3 below — full `pytest tests/services -v` output captured in terminal log.
+**Evidence:** `pytest tests/ -v` → **76 passed, 0 failed** (protocol: 17, projects: 29, people: 16, communications: 14 — collected 76 items in 0.68 s). Live smoke tests: People service (port 8002) served `/` capabilities catalog and `/people` with all 4 seeded members; `?skill=python&available=true` returned Alice Chen only. Communications service (port 8003) accepted `POST /messages` (201), returned hypermedia envelope with `_suggested_next` links, and `GET /messages?recipient_id=person_alice` returned 1 message.
 
 **Next:** Plan 3 — Orchestrator service (`docs/superpowers/plans/2026-04-19-orchestrator-service.md`).
 
