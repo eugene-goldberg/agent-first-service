@@ -6,7 +6,10 @@ from fastapi import FastAPI
 
 from agent_protocol.errors import register_error_handler
 from services.projects.db import Base, make_engine, make_sessionmaker
-from services.projects.routes import capabilities as capabilities_routes
+from services.projects.routes import (
+    capabilities as capabilities_routes,
+    projects as projects_routes,
+)
 
 
 def create_app(*, sqlite_path: pathlib.Path | str) -> FastAPI:
@@ -19,5 +22,6 @@ def create_app(*, sqlite_path: pathlib.Path | str) -> FastAPI:
 
     register_error_handler(app)
     app.include_router(capabilities_routes.router)
+    app.include_router(projects_routes.router)
 
     return app
