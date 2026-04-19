@@ -1,0 +1,16 @@
+{
+  "projects": [
+    {
+      "id": "proj_seed_alpha",
+      "name": "Existing Customer Portal",
+      "description": "The customer-facing portal we already operate.",
+      "tasks": [
+        {"id": "task_seed_a1", "title": "Add CSV export", "status": "in_progress", "assignee_id": "bob", "due_date": "2026-05-10"},
+        {"id": "task_seed_a2", "title": "Fix login error on Safari", "status": "todo", "assignee_id": null, "due_date": null}
+      ],
+      "milestones": [
+        {"id": "ms_seed_alpha_v2", "name": "Portal v2", "due_date": "2026-07-01"}
+      ]
+    }
+  ]
+}
