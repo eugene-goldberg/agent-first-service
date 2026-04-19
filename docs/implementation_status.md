@@ -38,8 +38,22 @@ _Deviation note: `tests/services/people/conftest.py` is deferred from Task 1 to 
 - [ ] Task 10: Communications service — send and retrieve messages
 - [ ] Task 11: Communications service — filters and constraint errors
 - [ ] Task 12: Communications service — seed loader
-- [ ] Task 13: Wire up Makefile + env + documentation
+- [x] Task 13: Wire up Makefile + env + documentation
 - [ ] Task 14: Full regression and live smoke test
+
+## 2026-04-19 — Leaf services increment (Plan 2 complete)
+
+**Plan:** `docs/superpowers/plans/2026-04-19-leaf-services.md`
+
+**Completed:**
+- People service (port 8002): DB, models, app factory, capabilities catalog, CRUD routes, skill/availability filters, semantic error envelopes, JSON seed loader, demo fixture.
+- Communications service (port 8003): DB, models, app factory, capabilities catalog, send/list/find routes, recipient/project filters, semantic error envelopes, JSON seed loader, demo fixture.
+- Makefile targets: `run-people`, `run-communications`, `test-people`, `test-communications`, `test-leaf-services`.
+- Note: `agent_protocol/` was extended mid-Plan-2 (commit `95b9b80`) to add `try_instead` dict support; Tasks 4/5/10/11 adapted using string-vs-dict pattern for `try_instead` field compatibility.
+
+**Evidence:** see Task 14 Step 3 below — full `pytest tests/services -v` output captured in terminal log.
+
+**Next:** Plan 3 — Orchestrator service (`docs/superpowers/plans/2026-04-19-orchestrator-service.md`).
 
 ## Plan 3 — not started
 ## Plan 4 — not started

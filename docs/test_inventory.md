@@ -26,3 +26,31 @@ Canonical list of all test modules in this project.
 ## External dependencies / credentials
 
 None for this plan. Plans 3+ require Azure OpenAI credentials (`AZURE_OPENAI_*`).
+
+## People service (`tests/services/people/`)
+
+| Test file | Covers | Type | Run |
+|---|---|---|---|
+| `test_people_db.py` | SQLAlchemy PersonRow create/read | Integration (sqlite) | `pytest tests/services/people/test_people_db.py -v` |
+| `test_models.py` | Pydantic model validation | Unit | `pytest tests/services/people/test_models.py -v` |
+| `test_capabilities.py` | `GET /` capability catalog | Integration (TestClient) | `pytest tests/services/people/test_capabilities.py -v` |
+| `test_people_crud.py` | Create/get/patch/list with envelope | Integration | `pytest tests/services/people/test_people_crud.py -v` |
+| `test_people_filters.py` | `skill` and `available` query filters | Integration | `pytest tests/services/people/test_people_filters.py -v` |
+| `test_constraint_errors.py` | 404 / 422 envelope semantics | Integration | `pytest tests/services/people/test_constraint_errors.py -v` |
+| `test_seed.py` | JSON seed loader idempotence | Integration | `pytest tests/services/people/test_seed.py -v` |
+
+External deps: none (sqlite is stdlib).
+
+## Communications service (`tests/services/communications/`)
+
+| Test file | Covers | Type | Run |
+|---|---|---|---|
+| `test_communications_db.py` | SQLAlchemy MessageRow create/read | Integration (sqlite) | `pytest tests/services/communications/test_communications_db.py -v` |
+| `test_models.py` | Pydantic model validation | Unit | `pytest tests/services/communications/test_models.py -v` |
+| `test_capabilities.py` | `GET /` capability catalog | Integration | `pytest tests/services/communications/test_capabilities.py -v` |
+| `test_messages_crud.py` | Send/get/list with envelope | Integration | `pytest tests/services/communications/test_messages_crud.py -v` |
+| `test_messages_filters.py` | `recipient_id` and `project_id` filters | Integration | `pytest tests/services/communications/test_messages_filters.py -v` |
+| `test_constraint_errors.py` | 404 / 422 envelope semantics | Integration | `pytest tests/services/communications/test_constraint_errors.py -v` |
+| `test_seed.py` | JSON seed loader idempotence | Integration | `pytest tests/services/communications/test_seed.py -v` |
+
+External deps: none.
