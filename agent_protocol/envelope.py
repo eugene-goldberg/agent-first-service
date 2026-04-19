@@ -6,6 +6,26 @@ from pydantic import BaseModel, ConfigDict, Field
 T = TypeVar("T")
 
 
+def make_response(
+    *,
+    data: Any,
+    self_link: str,
+    related: list[str] | None = None,
+    suggested_next: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    """Return a plain dict envelope with underscored agent-facing keys.
+
+    This is the Plan-2 convenience helper; AgentResponse (Plan 1) is unchanged.
+    """
+    return {
+        "data": data,
+        "_self": self_link,
+        "_related": list(related or []),
+        "_suggested_next": list(suggested_next or []),
+        "_generated_at": datetime.now(timezone.utc).isoformat(),
+    }
+
+
 class AgentResponse(BaseModel, Generic[T]):
     """Envelope wrapping every success response with hypermedia discovery metadata.
 
