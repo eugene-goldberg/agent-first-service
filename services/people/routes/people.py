@@ -71,6 +71,7 @@ def get_person(person_id: str, request: Request):
                 message=f"No person with id={person_id!r}.",
                 why="The id does not match any stored person.",
                 try_instead="GET /people — list all people and pick an id from the result.",
+                related=["/people"],
             )
         out = _row_to_out(row)
 
