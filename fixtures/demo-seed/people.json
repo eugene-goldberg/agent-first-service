@@ -1,0 +1,36 @@
+{
+  "people": [
+    {
+      "id": "person_alice",
+      "name": "Alice Chen",
+      "role": "senior engineer",
+      "skills": ["python", "fastapi", "langgraph"],
+      "available": true,
+      "current_load": 1
+    },
+    {
+      "id": "person_bob",
+      "name": "Bob Patel",
+      "role": "designer",
+      "skills": ["figma", "accessibility", "branding"],
+      "available": true,
+      "current_load": 0
+    },
+    {
+      "id": "person_carol",
+      "name": "Carol Ruiz",
+      "role": "product manager",
+      "skills": ["roadmaps", "discovery"],
+      "available": false,
+      "current_load": 3
+    },
+    {
+      "id": "person_dan",
+      "name": "Dan Park",
+      "role": "marketing lead",
+      "skills": ["copywriting", "launches", "messaging"],
+      "available": true,
+      "current_load": 1
+    }
+  ]
+}
