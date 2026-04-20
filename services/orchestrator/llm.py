@@ -49,6 +49,8 @@ class AzureLLMClient(LLMClient):
             azure_deployment=deployment,
             api_version=api_version,
             temperature=0,
+            max_retries=3,
+            timeout=90,
         )
 
     @classmethod
