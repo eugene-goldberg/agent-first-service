@@ -83,7 +83,7 @@ class OrchestrationGraph:
             job_id=state.job_id,
             kind="thought",
             summary=f"Planned {len(plan_json.get('steps', []))} step(s).",
-            detail={"plan": plan_json},
+            detail=_with_llm_path({"plan": plan_json}, plan_response),
         ))
         state.transcript.append({"role": "assistant", "content": plan_response["content"]})
 
@@ -107,7 +107,7 @@ class OrchestrationGraph:
                     job_id=state.job_id,
                     kind="final",
                     summary=summary,
-                    detail={"summary": summary},
+                    detail=_with_llm_path({"summary": summary}, act_response),
                 ))
                 state.completed = True
                 state.final_summary = summary
@@ -124,8 +124,11 @@ class OrchestrationGraph:
                 job_id=state.job_id,
                 kind="action",
                 summary=f"{step.verb} {step.url}",
-                detail={"verb": step.verb, "url": step.url, "body": step.body,
-                        "rationale": step.rationale},
+                detail=_with_llm_path(
+                    {"verb": step.verb, "url": step.url, "body": step.body,
+                     "rationale": step.rationale},
+                    act_response,
+                ),
             ))
 
             observation = await self._dispatch(step)
@@ -155,7 +158,7 @@ class OrchestrationGraph:
             job_id=state.job_id,
             kind="final",
             summary=summary,
-            detail={"summary": summary, "reason": "max_steps_reached"},
+            detail=_with_llm_path({"summary": summary, "reason": "max_steps_reached"}, fin),
         ))
         state.completed = True
         state.final_summary = summary
@@ -184,3 +187,11 @@ def _parse_json(text: str) -> dict[str, Any]:
         if stripped.endswith("```"):
             stripped = stripped[:-3]
     return json.loads(stripped.strip())
+
+
+def _with_llm_path(detail: dict[str, Any], llm_response: dict[str, Any]) -> dict[str, Any]:
+    """Carry HybridLLMClient's `_path` annotation (if present) into trace detail."""
+    path = llm_response.get("_path")
+    if path is not None:
+        return {**detail, "llm_path": path}
+    return detail

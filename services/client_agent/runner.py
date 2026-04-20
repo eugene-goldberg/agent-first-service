@@ -75,7 +75,7 @@ class ClientAgentRunner:
             brief_id=state.brief_id,
             kind="discovery",
             summary="Reviewed orchestrator capabilities.",
-            detail={"reasoning": discover_resp["content"]},
+            detail=_with_llm_path({"reasoning": discover_resp["content"]}, discover_resp),
         ))
 
         # Step 2: decide what to do next.
@@ -98,7 +98,10 @@ class ClientAgentRunner:
             brief_id=state.brief_id,
             kind="decision",
             summary=f"Will POST {decision['url']} with the user's brief.",
-            detail={"rationale": decision.get("rationale"), "body": body},
+            detail=_with_llm_path(
+                {"rationale": decision.get("rationale"), "body": body},
+                decide_resp,
+            ),
         ))
 
         # Step 3: invoke orchestrator.
@@ -131,7 +134,15 @@ class ClientAgentRunner:
             brief_id=state.brief_id,
             kind="summary",
             summary=state.final_summary[:120],
-            detail={"summary": state.final_summary},
+            detail=_with_llm_path({"summary": state.final_summary}, summary_resp),
         ))
 
         return state
+
+
+def _with_llm_path(detail: dict, llm_response: dict) -> dict:
+    """Carry ClientHybridLLM's `_path` annotation (if present) into trace detail."""
+    path = llm_response.get("_path")
+    if path is not None:
+        return {**detail, "llm_path": path}
+    return detail
