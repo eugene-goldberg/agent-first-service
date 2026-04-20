@@ -1,0 +1,8 @@
+{
+  "messages": [
+    {"role": "system", "content": "decision"}
+  ],
+  "response": {
+    "content": "{\"action\":\"post_orchestration\",\"url\":\"/orchestrations\",\"body\":{\"brief\":\"<pass-through>\"},\"rationale\":\"Orchestrator is the right next hop; forward the user brief unchanged.\"}"
+  }
+}

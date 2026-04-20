@@ -1,0 +1,9 @@
+{
+  "messages": [
+    {"role": "system", "content": "discovery"},
+    {"role": "user", "content": "The orchestrator exposes this capability catalog at GET /."}
+  ],
+  "response": {
+    "content": "The orchestrator advertises `start_orchestration` at POST /orchestrations. That matches the user's brief — I'll post the brief there and then watch its trace."
+  }
+}

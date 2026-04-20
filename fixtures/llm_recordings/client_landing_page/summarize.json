@@ -1,0 +1,8 @@
+{
+  "messages": [
+    {"role": "system", "content": "summary"}
+  ],
+  "response": {
+    "content": "I forwarded the brief to the orchestrator and watched it create the Q3 landing page project, assign a copywriter, and notify them. All steps succeeded."
+  }
+}
