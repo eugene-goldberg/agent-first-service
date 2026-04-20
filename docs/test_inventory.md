@@ -72,3 +72,22 @@ External deps: none.
 External deps:
 - `ORCHESTRATOR_REPLAY_DIR` must be set for tests. Default in tests: `fixtures/llm_recordings/landing_page`.
 - For live runs against Azure OpenAI: set `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_DEPLOYMENT`, `AZURE_OPENAI_API_VERSION`, and leave `ORCHESTRATOR_REPLAY_DIR` unset.
+
+## Client Agent (`tests/services/client_agent/`)
+
+| Test file | Covers | Type | Run |
+|---|---|---|---|
+| `test_state_bus_llm.py` | State, TraceBus, LLM replay factory | Unit / async | `pytest tests/services/client_agent/test_state_bus_llm.py -v` |
+| `test_runner_replay.py` | Runner discovers + invokes orchestrator end-to-end | Integration (ASGITransport) | `pytest tests/services/client_agent/test_runner_replay.py -v` |
+| `test_capabilities.py` | `GET /` client-agent catalog | Integration | `pytest tests/services/client_agent/test_capabilities.py -v` |
+| `test_briefs_endpoint.py` | POST/GET/LIST briefs + background completion | Async integration | `pytest tests/services/client_agent/test_briefs_endpoint.py -v` |
+| `test_sse_stream.py` | `/sse/client` streams published events | Async integration | `pytest tests/services/client_agent/test_sse_stream.py -v` |
+| `test_constraint_errors.py` | 404 / 422 envelope semantics | Integration | `pytest tests/services/client_agent/test_constraint_errors.py -v` |
+
+External deps: `CLIENT_AGENT_REPLAY_DIR` must point at `fixtures/llm_recordings/client_landing_page` for tests. For live Azure OpenAI, unset replay dir and set `AZURE_OPENAI_*`.
+
+## Dashboard (Next.js, `dashboard/`)
+
+The dashboard is a thin viewer with no unit tests in this plan. Its correctness is verified end-to-end during the manual demo (Task 12). The browser is the test harness:
+- `npm run build` enforces TypeScript compilation; broken types fail the build.
+- Runtime correctness is evaluated by watching trace events render live during the demo.

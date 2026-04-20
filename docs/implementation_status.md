@@ -75,4 +75,40 @@ _Deviation note: `tests/services/people/conftest.py` is deferred from Task 1 to 
 
 **Next:** Plan 4 — Client Agent + Dashboard (`docs/superpowers/plans/2026-04-19-client-agent-and-dashboard.md`).
 
-## Plan 4 — not started
+## 2026-04-19 — Client Agent + Dashboard increment (Plan 4 complete)
+
+**Plan:** `docs/superpowers/plans/2026-04-19-client-agent-and-dashboard.md`
+
+**Completed:**
+- Client Agent service on :8080 — state, trace bus, pluggable LLM (Azure + replay), runner that discovers the orchestrator via its catalog and forwards briefs, FastAPI routes (`POST /client/briefs`, `GET /client/briefs/{id}`, `GET /client/briefs/{id}/trace`, `GET /client/briefs`, `GET /sse/client`), and its own capability catalog at `GET /`.
+- LLM recording fixtures for the client-agent landing-page scenario (discover/decide/summarize).
+- Next.js dashboard (`dashboard/`) with 5-panel layout: presenter input, client-agent trace, orchestrator trace, and three leaf-service capability snapshots with auto-refresh. Dark-mode Tailwind UI with color-coded trace kinds.
+- `run-demo` Makefile target and documented six-shell startup sequence.
+
+**Commits:**
+- Task 1 (`ebd8fad`) — Client Agent: state, trace bus, LLM client
+- Task 2 (`baeb234`) — LLM fixtures for landing-page scenario
+- Task 3 (`7710854`) — Client Agent runner
+- Task 4 (`13dcc0a`) — Client Agent app factory, capabilities, routes
+- Task 5 (`e441307`) — briefs endpoint
+- Task 6 (`6bd0d2c`) — SSE stream
+- Task 7 (`2499f32`) — constraint-error envelope tests
+- Task 8 (`4092a14`) — Next.js scaffold
+- Task 9 (`ff22a82`) — types and SSE hooks
+- Task 10 (`3870555`) — components and page layout
+- Task 11 (`471f444`) — Makefile full demo orchestration
+- Task 12 — DEFERRED — manual verification pending; no code impact
+- Task 13 — this commit (documentation roll-up)
+
+**Deviations from plan:**
+- Task 5: POST `/client/briefs` handler made `async def` (plan said `def`) — required for `asyncio.create_task`; avoids the Plan-3 event-loop race.
+- Task 6: SSE endpoint uses `asyncio.wait_for(queue.get(), timeout=0.3)` instead of `request.is_disconnected()` — the only proven working pattern in this codebase.
+- Task 7: `_try_instead` dict-access assertion converted to string-containment — standard workaround documented since Plan 2.
+
+**Evidence:**
+- `pytest tests -v` → 113 passed, 0 failed (Plans 1–4 green).
+- `cd dashboard && npm run build` → zero TypeScript errors, build succeeds.
+
+**Demo is ready.** `make run-demo` prints the six commands to start; open `http://127.0.0.1:3000/` and type a brief.
+
+**Next:** none — all four plans complete.
