@@ -41,7 +41,17 @@ class OrchestrationRunner:
             session.add(JobRow(id=job_id, brief=brief, status="running"))
             session.commit()
 
-        asyncio.create_task(self._run(job_id=job_id, brief=brief))
+        try:
+            loop = asyncio.get_running_loop()
+            loop.create_task(self._run(job_id=job_id, brief=brief))
+        except RuntimeError:
+            # No running event loop (e.g. sync test context); run in background thread.
+            import threading
+            threading.Thread(
+                target=asyncio.run,
+                args=(self._run(job_id=job_id, brief=brief),),
+                daemon=True,
+            ).start()
         return job_id
 
     async def _run(self, *, job_id: str, brief: str) -> None:
