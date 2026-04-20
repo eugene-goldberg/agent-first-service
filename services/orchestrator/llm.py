@@ -15,7 +15,17 @@ class LLMClient:
 
     @classmethod
     def from_env(cls) -> "LLMClient":
+        mode = os.environ.get("ORCHESTRATOR_LLM_MODE", "").strip().lower()
         replay_dir = os.environ.get("ORCHESTRATOR_REPLAY_DIR", "").strip()
+        if mode == "hybrid":
+            if not replay_dir:
+                raise RuntimeError(
+                    "ORCHESTRATOR_LLM_MODE=hybrid requires ORCHESTRATOR_REPLAY_DIR to point at a fixtures directory."
+                )
+            return HybridLLMClient(
+                primary=AzureLLMClient.from_env(),
+                fallback=ReplayLLMClient(recordings_dir=replay_dir),
+            )
         if replay_dir:
             return ReplayLLMClient(recordings_dir=replay_dir)
         return AzureLLMClient.from_env()
@@ -90,3 +100,29 @@ class AzureLLMClient(LLMClient):
 
         result = self._client.invoke(lc_messages)
         return {"content": result.content}
+
+
+class HybridLLMClient(LLMClient):
+    """Tries primary (live Azure) first, falls back to replay on error.
+
+    The return dict is annotated with `_path` = "live" | "replay_fallback" so
+    callers can surface which route produced the response in trace events.
+    """
+
+    def __init__(self, *, primary: LLMClient, fallback: LLMClient) -> None:
+        self._primary = primary
+        self._fallback = fallback
+
+    def invoke(self, *, step: str, messages: list[dict[str, Any]]) -> dict[str, Any]:
+        try:
+            result = self._primary.invoke(step=step, messages=messages)
+            result["_path"] = "live"
+            return result
+        except Exception as primary_err:
+            try:
+                result = self._fallback.invoke(step=step, messages=messages)
+            except Exception:
+                raise primary_err
+            result["_path"] = "replay_fallback"
+            result["primary_error"] = f"{type(primary_err).__name__}: {primary_err}"
+            return result

@@ -13,7 +13,17 @@ class ClientReplayMiss(RuntimeError):
 class ClientLLMClient:
     @classmethod
     def from_env(cls) -> "ClientLLMClient":
+        mode = os.environ.get("CLIENT_AGENT_LLM_MODE", "").strip().lower()
         replay_dir = os.environ.get("CLIENT_AGENT_REPLAY_DIR", "").strip()
+        if mode == "hybrid":
+            if not replay_dir:
+                raise RuntimeError(
+                    "CLIENT_AGENT_LLM_MODE=hybrid requires CLIENT_AGENT_REPLAY_DIR to point at a fixtures directory."
+                )
+            return ClientHybridLLM(
+                primary=ClientAzureLLM.from_env(),
+                fallback=ClientReplayLLM(recordings_dir=replay_dir),
+            )
         if replay_dir:
             return ClientReplayLLM(recordings_dir=replay_dir)
         return ClientAzureLLM.from_env()
@@ -86,3 +96,29 @@ class ClientAzureLLM(ClientLLMClient):
                 raise ValueError(f"Unknown role {role!r}")
         result = self._client.invoke(lc)
         return {"content": result.content}
+
+
+class ClientHybridLLM(ClientLLMClient):
+    """Tries primary (live Azure) first, falls back to replay on error.
+
+    Annotates the return dict with `_path` = "live" | "replay_fallback" so
+    trace events can surface which route produced the response.
+    """
+
+    def __init__(self, *, primary: ClientLLMClient, fallback: ClientLLMClient) -> None:
+        self._primary = primary
+        self._fallback = fallback
+
+    def invoke(self, *, step: str, messages: list[dict[str, Any]]) -> dict[str, Any]:
+        try:
+            result = self._primary.invoke(step=step, messages=messages)
+            result["_path"] = "live"
+            return result
+        except Exception as primary_err:
+            try:
+                result = self._fallback.invoke(step=step, messages=messages)
+            except Exception:
+                raise primary_err
+            result["_path"] = "replay_fallback"
+            result["primary_error"] = f"{type(primary_err).__name__}: {primary_err}"
+            return result
