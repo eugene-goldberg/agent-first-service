@@ -1,0 +1,6 @@
+{
+  "messages": [{"role": "system", "content": "finalize"}],
+  "response": {
+    "content": "Created project and assigned copy task, but the max_steps budget was reached before a final signal."
+  }
+}

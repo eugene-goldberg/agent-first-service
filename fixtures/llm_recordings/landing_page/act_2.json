@@ -1,0 +1,6 @@
+{
+  "messages": [{"role": "system", "content": "actor"}],
+  "response": {
+    "content": "{\"verb\":\"GET\",\"url\":\"http://127.0.0.1:8002/people?skill=copywriting&available=true\",\"body\":null,\"rationale\":\"Find an available copywriter for the landing page copy.\",\"is_final\":false}"
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "messages": [{"role": "system", "content": "actor"}],
+  "response": {
+    "content": "{\"verb\":\"POST\",\"url\":\"http://127.0.0.1:8001/projects\",\"body\":{\"name\":\"Q3 Launch Landing Page\",\"description\":\"Marketing landing page for Q3 launch.\"},\"rationale\":\"Create the project first so later steps have a project id.\",\"is_final\":false}"
+  }
+}

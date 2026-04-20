@@ -1,0 +1,9 @@
+{
+  "messages": [
+    {"role": "system", "content": "planner"},
+    {"role": "user", "content": "Build a marketing landing page for our Q3 launch."}
+  ],
+  "response": {
+    "content": "{\"steps\":[{\"verb\":\"POST\",\"url\":\"http://127.0.0.1:8001/projects\",\"rationale\":\"Create the Q3 launch landing project\"},{\"verb\":\"GET\",\"url\":\"http://127.0.0.1:8002/people?skill=copywriting&available=true\",\"rationale\":\"Find an available copywriter\"},{\"verb\":\"POST\",\"url\":\"http://127.0.0.1:8001/projects/{proj_id}/tasks\",\"rationale\":\"Create copy task\"},{\"verb\":\"POST\",\"url\":\"http://127.0.0.1:8003/messages\",\"rationale\":\"Notify the assignee\"}]}"
+  }
+}

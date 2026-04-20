@@ -1,0 +1,6 @@
+{
+  "messages": [{"role": "system", "content": "actor"}],
+  "response": {
+    "content": "{\"verb\":\"POST\",\"url\":\"http://127.0.0.1:8001/projects/proj_demo/tasks\",\"body\":{\"title\":\"Write landing page copy\",\"assignee_id\":\"person_dan\"},\"rationale\":\"Assign the copy task to Dan, who has copywriting skill and is available.\",\"is_final\":false}"
+  }
+}

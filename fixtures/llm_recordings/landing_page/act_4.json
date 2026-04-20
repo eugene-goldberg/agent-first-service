@@ -1,0 +1,6 @@
+{
+  "messages": [{"role": "system", "content": "actor"}],
+  "response": {
+    "content": "{\"verb\":\"POST\",\"url\":\"http://127.0.0.1:8003/messages\",\"body\":{\"recipient_id\":\"person_dan\",\"project_id\":\"proj_demo\",\"subject\":\"New assignment: Q3 landing page\",\"body\":\"You've been assigned to write copy for the Q3 landing page project.\"},\"rationale\":\"Let Dan know about the assignment.\",\"is_final\":false}"
+  }
+}

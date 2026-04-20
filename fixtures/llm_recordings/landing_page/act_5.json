@@ -1,0 +1,6 @@
+{
+  "messages": [{"role": "system", "content": "actor"}],
+  "response": {
+    "content": "{\"is_final\":true,\"summary\":\"Created Q3 launch landing page project, assigned copy task to Dan Park, and notified him.\"}"
+  }
+}
