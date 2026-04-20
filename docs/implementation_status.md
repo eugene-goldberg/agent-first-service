@@ -97,7 +97,7 @@ _Deviation note: `tests/services/people/conftest.py` is deferred from Task 1 to 
 - Task 9 (`ff22a82`) — types and SSE hooks
 - Task 10 (`3870555`) — components and page layout
 - Task 11 (`471f444`) — Makefile full demo orchestration
-- Task 12 — DEFERRED — manual verification pending; no code impact
+- Task 12 — VERIFIED 2026-04-20 — full-stack smoke test executed; see "Task 12 smoke test evidence" below
 - Task 13 — this commit (documentation roll-up)
 
 **Deviations from plan:**
@@ -112,3 +112,77 @@ _Deviation note: `tests/services/people/conftest.py` is deferred from Task 1 to 
 **Demo is ready.** `make run-demo` prints the six commands to start; open `http://127.0.0.1:3000/` and type a brief.
 
 **Next:** none — all four plans complete.
+
+---
+
+### Task 12 smoke test evidence (executed 2026-04-20)
+
+All 6 processes started cleanly on ports 8001/8002/8003/8000/8080/3000. Demo flow end-to-end:
+
+- `POST http://localhost:8080/client/briefs` → `cb_d68b03ef`, status `completed` in <1 s, `orchestration_job_id=job_9e0f65d7`, final summary streamed back.
+- Client trace: 5 events (discovery → discovery → decision → invocation → summary).
+- Orchestrator trace: 10 events (thought → 4× action/observation pairs → final). One `POST /projects/proj_demo/tasks` returned 422 — expected replay-fixture mismatch (fixture references `proj_demo` but runtime-created project gets a random id like `proj_68c0de`). Non-blocking; orchestrator continues and reaches `final`.
+- Leaf-service writes confirmed: `GET /messages` shows `msg_d21b0ddd` ("New assignment: Q3 landing page" → person_dan), written by the orchestrator step observed in its trace.
+- Dashboard: `GET http://localhost:3000/` → HTTP 200, layout shell renders (Tailwind grid classes present).
+
+**SSE smoke** (`tmp/test_logs/sse_smoke.py` — subscribe then POST within 300 ms):
+- `/sse/client`: 5 events streamed, labels `discovery/decision/invocation/summary`.
+- `/sse/orchestrator`: **reproduced the known "Event loop is closed" race** — 3 events streamed before the job crashed (`thought → action → error`). Error propagated cleanly as `event: error`; no process crash; subsequent orchestrations succeed. This confirms the Plan 3 Task 14 finding: the race triggers when an SSE subscriber is active at spawn time, and should be prioritized as a Plan-5 hardening candidate.
+
+**Verdict:** Plan 4 Task 12 complete. Full stack operational end-to-end. Known orchestrator SSE race reproduced and remains the only open issue.
+
+---
+
+### Orchestrator "Event loop is closed" race — FIXED 2026-04-20
+
+**Root cause:** `POST /orchestrations` handler was declared sync (`def start_orchestration`). FastAPI routes sync handlers to a threadpool, so inside `runner.start()` the call `asyncio.get_running_loop()` raised `RuntimeError` (no running loop in threadpool) and fell through to the "spawn new thread + `asyncio.run`" fallback branch. That path created a brand-new event loop, but the httpx `AsyncClient` and the `TraceBus` primitives (`asyncio.Lock`, subscriber `asyncio.Queue` instances) are loop-bound to the main FastAPI loop where they were constructed. The background work thus ran on the wrong loop, and operations on those primitives failed with `RuntimeError('Event loop is closed')` as soon as the ephemeral loop terminated.
+
+**Fix:** `services/orchestrator/routes/orchestrations.py` — `def start_orchestration` → `async def start_orchestration`. Now the handler runs on FastAPI's main loop, `asyncio.get_running_loop()` succeeds, and `loop.create_task(self._run(...))` schedules the background work on the same loop as the httpx client and the bus. Same pattern Plan 4 T5 applied to `POST /client/briefs`, backported.
+
+**Verification:** `.venv/bin/python3 tmp/test_logs/sse_smoke.py` run 3× consecutively — before the fix: 3 orchestrator SSE events then `event: error` with the crash. After: 10/10 events per run, zero errors, 30/30 clean. `pytest tests/ -q` → 113 passed.
+
+**Result:** no open issues. Demo is ship-ready without caveats.
+
+---
+
+### Live Azure OpenAI integration — Increment 1 (2026-04-20)
+
+**Scope:** Orchestrator live against Azure; client agent stays in replay for now.
+
+**Changes:**
+- `.env` created (gitignored) with Azure endpoint, API key, deployment `gpt-4o`, api_version `2024-12-01-preview` (per `llm.md`).
+- `services/orchestrator/llm.py` — `AzureChatOpenAI` now called with `max_retries=3, timeout=90` for stage resilience.
+
+**Live smoke evidence** (`POST /orchestrations` with "Build a marketing landing page for our Q3 launch."):
+- 8-second Azure round-trip (replay was <1s) → confirms real API hit.
+- **18 trace events** (replay was 10) — different shape per run.
+- Agent performed runtime discovery: `GET /` on projects, people, and communications before acting.
+- Real error recovery: `POST /communications` → 404 → `POST /messages` → 422 → `GET /people?available=true` → `POST /messages` → 201.
+- Clean final summary; zero warnings in orchestrator log.
+
+**Security note:** `llm.md` at repo root contains the plaintext API key and is NOT in `.gitignore`. Recommend deleting `llm.md` or adding it to `.gitignore` before any remote push. The same key now lives in `.env` which IS gitignored.
+
+**Next candidate increments (un-scoped):** take client_agent live; migrate to `init_chat_model` preset pattern; add hybrid live-then-replay fallback; record fresh fixtures from a live run.
+
+---
+
+### Live Azure OpenAI integration — Increment 2 (2026-04-20)
+
+**Scope:** Client agent joins the orchestrator on live Azure — end-to-end LLM stack is now live.
+
+**Changes:**
+- `services/client_agent/llm.py` — `AzureChatOpenAI` now called with `max_retries=3, timeout=90` (mirrors orchestrator).
+- `.env` — `CLIENT_AGENT_REPLAY_DIR=` blanked so the client agent routes to Azure instead of the replay fixtures.
+
+**Live smoke evidence** (`POST /client/briefs` with `{"brief":"Plan a Q3 product launch."}`, brief `cb_a3615b8e` → job `job_8228d3a0`):
+- End-to-end round-trip ~18 s (client ~4 s + orchestrator ~13 s); replay-mode client previously completed in <1 s.
+- **Client trace: 5 events** (expected 5–8) — real reasoning text, e.g. *"To plan a Q3 product launch, the appropriate next hop is the 'start_orchestration' capability at POST /orchestrations..."*.
+- **Orchestrator trace: 18 events** (expected 15–20) — LLM planned 6 steps with per-step rationale, then executed runtime discovery of all 3 leaf catalogs.
+- `final_summary` is a proper LLM-composed natural-language summary referencing the job id — not a canned replay string.
+- Regression suite: `.venv/bin/python3 -m pytest tests/ -q` → **113 passed** (no regressions).
+
+**Security update:** `llm.md` has been removed from the repo root (no longer present on disk). Key now lives only in the gitignored `.env`.
+
+**Uncommitted:** Increment 2 `llm.py` + `.env` blanking edits remain uncommitted per global no-git-without-instruction policy (the `.env` is gitignored anyway).
+
+**Next candidate increments (un-scoped, ask user which):** migrate both `llm.py` files to `init_chat_model` preset pattern; add `HybridLLMClient` with live-then-replay fallback; re-record fixtures from a live run.
