@@ -186,3 +186,36 @@ All 6 processes started cleanly on ports 8001/8002/8003/8000/8080/3000. Demo flo
 **Uncommitted:** Increment 2 `llm.py` + `.env` blanking edits remain uncommitted per global no-git-without-instruction policy (the `.env` is gitignored anyway).
 
 **Next candidate increments (un-scoped, ask user which):** migrate both `llm.py` files to `init_chat_model` preset pattern; add `HybridLLMClient` with live-then-replay fallback; re-record fixtures from a live run.
+
+---
+
+### Live Azure OpenAI integration — Increment 3: Hybrid fallback (2026-04-20)
+
+**Scope:** Add `HybridLLMClient` / `ClientHybridLLM` — try live Azure first, fall back to replay fixtures on any exception. Annotate trace events with `llm_path` so the route taken per LLM call is visible in the stream.
+
+**Changes:**
+- `services/orchestrator/llm.py` — new `HybridLLMClient(primary, fallback)`; factory recognizes `ORCHESTRATOR_LLM_MODE=hybrid` (requires `ORCHESTRATOR_REPLAY_DIR`).
+- `services/client_agent/llm.py` — mirror: `ClientHybridLLM`; factory honors `CLIENT_AGENT_LLM_MODE=hybrid` + `CLIENT_AGENT_REPLAY_DIR`.
+- `services/orchestrator/graph.py` — every LLM-originated `TraceEvent` (thought / action / final) now carries `llm_path` in `detail` via `_with_llm_path()` helper.
+- `services/client_agent/runner.py` — every LLM-originated `ClientTraceEvent` (discovery-reasoning / decision / summary) carries `llm_path` in `detail` via `_with_llm_path()` helper.
+- `.env` — switched both services to `ORCHESTRATOR_LLM_MODE=hybrid` / `CLIENT_AGENT_LLM_MODE=hybrid` with the fixture dirs populated; demo is now fail-soft.
+
+**Live smoke evidence** (`POST /client/briefs` with `{"brief":"Plan a Q3 product launch."}`, brief `cb_4d6b3d45` → job `job_b0d474ba`):
+- Client: 5 events, all 3 LLM-originated events (`discovery`, `decision`, `summary`) annotated `llm_path: live`; the 2 non-LLM events (initial GET of orchestrator catalog, POST /orchestrations) correctly carry no annotation.
+- Orchestrator: 18 events — every `thought`/`action`/`final` event tagged `llm_path: live`; every `observation` correctly unannotated (observations come from HTTP, not LLM).
+- Orchestrator completed in ~1 s after submission (prompt-cache hot), end-to-end still genuinely live.
+
+**New tests (14 added, 127 total pass):**
+- `tests/services/orchestrator/test_hybrid_llm.py` — 6 tests: primary-success / fallback / both-fail / subclass / `from_env` selects hybrid / `from_env` rejects missing replay dir.
+- `tests/services/client_agent/test_hybrid_llm.py` — 6 tests: same matrix for client.
+- `tests/services/orchestrator/test_graph_hybrid_trace.py` — integration: inject primary failure via empty-dir `ReplayLLMClient`, confirm `llm_path: replay_fallback` flows into `thought` and `action` trace detail.
+- `tests/services/client_agent/test_runner_hybrid_trace.py` — mirror for client runner, asserts `replay_fallback` reaches `discovery`/`decision`/`summary` events.
+
+All tests use real `ReplayLLMClient`/`ClientReplayLLM` instances as failure injectors (empty dir → real `ReplayMissError`). Zero mocks, zero hardcoded LLM responses — matches the project's "no mocks" policy.
+
+**Operational behavior:**
+- Default (mode unset): preserves existing replay-only OR live-only behavior based on whether `*_REPLAY_DIR` is set.
+- `*_LLM_MODE=hybrid`: primary = live Azure, fallback = fixture replay. On Azure exception, the next call transparently uses the fixture. If BOTH primary and fallback fail, the original primary (Azure) error is re-raised.
+- Trace annotation is opt-in at the `HybridLLMClient` layer only — pure live and pure replay produce unchanged trace output (backward compatible).
+
+**Dashboard note:** No UI indicator added yet — the `llm_path` key is present in `detail`; the dashboard trace panel currently renders `detail` as-is so it will be visible as part of the JSON. A dedicated badge is a separate future increment if the user wants it.

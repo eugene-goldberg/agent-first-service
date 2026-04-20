@@ -68,10 +68,13 @@ External deps: none.
 | `test_orchestrations_endpoint.py` | POST/GET/LIST/TRACE orchestration routes | Integration | `pytest tests/services/orchestrator/test_orchestrations_endpoint.py -v` |
 | `test_sse_stream.py` | `/sse/orchestrator` live streaming | Async integration | `pytest tests/services/orchestrator/test_sse_stream.py -v` |
 | `test_constraint_errors.py` | 404 / 422 envelope semantics | Integration | `pytest tests/services/orchestrator/test_constraint_errors.py -v` |
+| `test_hybrid_llm.py` | HybridLLMClient live/fallback/both-fail + factory `ORCHESTRATOR_LLM_MODE=hybrid` | Unit | `pytest tests/services/orchestrator/test_hybrid_llm.py -v` |
+| `test_graph_hybrid_trace.py` | Graph surfaces `llm_path` into trace events via `_with_llm_path` | Integration (ASGITransport) | `pytest tests/services/orchestrator/test_graph_hybrid_trace.py -v` |
 
 External deps:
 - `ORCHESTRATOR_REPLAY_DIR` must be set for tests. Default in tests: `fixtures/llm_recordings/landing_page`.
 - For live runs against Azure OpenAI: set `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_DEPLOYMENT`, `AZURE_OPENAI_API_VERSION`, and leave `ORCHESTRATOR_REPLAY_DIR` unset.
+- For hybrid fallback mode: set `ORCHESTRATOR_LLM_MODE=hybrid` with BOTH Azure config and `ORCHESTRATOR_REPLAY_DIR` populated.
 
 ## Client Agent (`tests/services/client_agent/`)
 
@@ -83,8 +86,10 @@ External deps:
 | `test_briefs_endpoint.py` | POST/GET/LIST briefs + background completion | Async integration | `pytest tests/services/client_agent/test_briefs_endpoint.py -v` |
 | `test_sse_stream.py` | `/sse/client` streams published events | Async integration | `pytest tests/services/client_agent/test_sse_stream.py -v` |
 | `test_constraint_errors.py` | 404 / 422 envelope semantics | Integration | `pytest tests/services/client_agent/test_constraint_errors.py -v` |
+| `test_hybrid_llm.py` | ClientHybridLLM live/fallback/both-fail + factory `CLIENT_AGENT_LLM_MODE=hybrid` | Unit | `pytest tests/services/client_agent/test_hybrid_llm.py -v` |
+| `test_runner_hybrid_trace.py` | Runner surfaces `llm_path` into trace events via `_with_llm_path` | Integration (ASGITransport) | `pytest tests/services/client_agent/test_runner_hybrid_trace.py -v` |
 
-External deps: `CLIENT_AGENT_REPLAY_DIR` must point at `fixtures/llm_recordings/client_landing_page` for tests. For live Azure OpenAI, unset replay dir and set `AZURE_OPENAI_*`.
+External deps: `CLIENT_AGENT_REPLAY_DIR` must point at `fixtures/llm_recordings/client_landing_page` for tests. For live Azure OpenAI, unset replay dir and set `AZURE_OPENAI_*`. For hybrid fallback: set `CLIENT_AGENT_LLM_MODE=hybrid` with BOTH Azure config and `CLIENT_AGENT_REPLAY_DIR` populated.
 
 ## Dashboard (Next.js, `dashboard/`)
 
