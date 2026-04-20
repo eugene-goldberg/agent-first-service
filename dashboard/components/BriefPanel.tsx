@@ -40,7 +40,7 @@ export function BriefPanel() {
         className="flex flex-col flex-1 p-4 gap-3"
       >
         <textarea
-          className="flex-1 bg-black/40 border border-gray-800 rounded p-3 text-sm resize-none focus:outline-none focus:border-amber-400"
+          className="bg-black/40 border border-gray-800 rounded p-3 text-sm resize-none focus:outline-none focus:border-amber-400"
           placeholder="Type a brief like:  Build a marketing landing page for our Q3 launch."
           value={brief}
           onChange={(e) => setBrief(e.target.value)}

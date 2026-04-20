@@ -21,6 +21,14 @@ def create_app(*, sqlite_path: pathlib.Path | str) -> FastAPI:
     app = FastAPI(title="Projects")
     app.state.session_maker = session_maker
 
+    from fastapi.middleware.cors import CORSMiddleware
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
     register_error_handler(app)
     app.include_router(capabilities_routes.router)
     app.include_router(projects_routes.router)

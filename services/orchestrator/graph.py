@@ -16,11 +16,24 @@ You have access to three leaf services over HTTP:
 - People service at {people_base}
 - Communications service at {comms_base}
 
-Each service exposes a self-describing capability catalog at GET /.
+The catalogs below list EVERY endpoint each service exposes. You MUST plan using
+only these exact paths. Do NOT invent URLs like /pages, /marketing, /launches —
+if a concept isn't in a catalog, map it to the closest real endpoint (a project
+or a task) or skip that step.
+
+=== Projects catalog ===
+{projects_catalog}
+
+=== People catalog ===
+{people_catalog}
+
+=== Communications catalog ===
+{comms_catalog}
+
 Your job: given a natural-language brief, produce a short JSON plan like:
 
 {{"steps": [
-  {{"verb": "GET", "url": "<base>/", "rationale": "discover capabilities"}},
+  {{"verb": "POST", "url": "{projects_base}/projects", "rationale": "..."}},
   ...
 ]}}
 
@@ -31,6 +44,11 @@ ACTOR_SYSTEM = """You are executing the plan one step at a time.
 For the next step, produce ONLY a JSON object of the form:
 
 {"verb": "GET"|"POST"|"PATCH"|"DELETE", "url": "...", "body": {...} | null, "rationale": "...", "is_final": false}
+
+Hard rules:
+- Only use URLs whose path appears in the catalogs shown in the plan's system prompt.
+- If an earlier observation returned 404, do NOT retry the same path — pick a different real endpoint or signal completion.
+- If the brief cannot be fulfilled with the available endpoints, emit is_final:true with a summary explaining what was accomplished and what's out of scope.
 
 When you believe all necessary work is done, emit {"is_final": true, "summary": "one-sentence result"}."""
 
@@ -67,12 +85,32 @@ class OrchestrationGraph:
             if persist_event is not None:
                 await persist_event(event)
 
+        # Node: pre-plan discovery — fetch live catalogs so the planner is grounded
+        # in the actual advertised endpoints (no more hallucinated /pages).
+        projects_catalog = await self._toolbox.http_get(f"{self._projects_base}/")
+        people_catalog = await self._toolbox.http_get(f"{self._people_base}/")
+        comms_catalog = await self._toolbox.http_get(f"{self._comms_base}/")
+
+        await emit(TraceEvent(
+            job_id=state.job_id,
+            kind="observation",
+            summary="Fetched 3 leaf-service catalogs for planner grounding.",
+            detail={
+                "projects_capabilities": _catalog_paths(projects_catalog),
+                "people_capabilities": _catalog_paths(people_catalog),
+                "comms_capabilities": _catalog_paths(comms_catalog),
+            },
+        ))
+
         # Node: plan
         plan_messages = [
             {"role": "system", "content": PLANNER_SYSTEM.format(
                 projects_base=self._projects_base,
                 people_base=self._people_base,
                 comms_base=self._comms_base,
+                projects_catalog=_catalog_summary(projects_catalog),
+                people_catalog=_catalog_summary(people_catalog),
+                comms_catalog=_catalog_summary(comms_catalog),
             )},
             {"role": "user", "content": state.brief},
         ]
@@ -195,3 +233,28 @@ def _with_llm_path(detail: dict[str, Any], llm_response: dict[str, Any]) -> dict
     if path is not None:
         return {**detail, "llm_path": path}
     return detail
+
+
+def _catalog_body(observation: dict[str, Any]) -> dict[str, Any]:
+    body = observation.get("body") if isinstance(observation, dict) else None
+    if not isinstance(body, dict):
+        return {}
+    return body.get("data") if isinstance(body.get("data"), dict) else body
+
+
+def _catalog_summary(observation: dict[str, Any]) -> str:
+    body = _catalog_body(observation)
+    caps = body.get("capabilities", []) or []
+    lines = []
+    for c in caps:
+        verb = c.get("verb") or c.get("method") or "?"
+        path = c.get("path") or "?"
+        summary = c.get("summary") or c.get("intent") or c.get("returns") or ""
+        lines.append(f"{verb} {path} — {summary}")
+    return "\n".join(lines) if lines else "(no capabilities reported)"
+
+
+def _catalog_paths(observation: dict[str, Any]) -> list[str]:
+    body = _catalog_body(observation)
+    caps = body.get("capabilities", []) or []
+    return [f"{c.get('verb') or c.get('method') or '?'} {c.get('path') or '?'}" for c in caps]

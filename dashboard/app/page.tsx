@@ -1,4 +1,5 @@
 import { BriefPanel } from "@/components/BriefPanel";
+import { CreatedProjectPanel } from "@/components/CreatedProjectPanel";
 import { ServiceSnapshot } from "@/components/ServiceSnapshot";
 import { TracePanel } from "@/components/TracePanel";
 
@@ -22,7 +23,7 @@ export default function Page() {
 
       <div className="grid grid-cols-12 gap-4 min-h-0">
         <div className="col-span-4 min-h-0 grid grid-rows-[auto,1fr] gap-4">
-          <div className="h-40">
+          <div className="h-64">
             <BriefPanel />
           </div>
           <div className="min-h-0">
@@ -34,7 +35,8 @@ export default function Page() {
           <TracePanel title="Orchestrator — /sse/orchestrator" url={`${ORCHESTRATOR_URL}/sse/orchestrator`} />
         </div>
 
-        <div className="col-span-4 min-h-0 grid grid-rows-3 gap-4">
+        <div className="col-span-4 min-h-0 grid grid-rows-4 gap-4">
+          <CreatedProjectPanel />
           <ServiceSnapshot title="Projects (:8001)" url={`${PROJECTS_URL}/`} />
           <ServiceSnapshot title="People (:8002)" url={`${PEOPLE_URL}/`} />
           <ServiceSnapshot title="Communications (:8003)" url={`${COMMUNICATIONS_URL}/`} />

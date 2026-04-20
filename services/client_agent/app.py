@@ -34,13 +34,13 @@ def create_app(
         "ORCHESTRATOR_BASE_URL", "http://127.0.0.1:8000"
     )
 
-    @app.middleware("http")
-    async def cors_headers(request, call_next):
-        response = await call_next(request)
-        response.headers["access-control-allow-origin"] = "*"
-        response.headers["access-control-allow-methods"] = "GET, POST, PATCH, OPTIONS"
-        response.headers["access-control-allow-headers"] = "*"
-        return response
+    from fastapi.middleware.cors import CORSMiddleware
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
     register_error_handler(app)
     app.include_router(capabilities_router.router)

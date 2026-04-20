@@ -20,6 +20,14 @@ def create_app(*, sqlite_path: str | None = None, session_maker=None) -> FastAPI
     app = FastAPI(title="People Service", version="0.1.0")
     app.state.session_maker = session_maker
 
+    from fastapi.middleware.cors import CORSMiddleware
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
     register_error_handler(app)
     app.include_router(capabilities_router.router)
     app.include_router(people_router.router)

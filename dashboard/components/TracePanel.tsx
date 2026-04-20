@@ -18,7 +18,7 @@ export function TracePanel({ title, url }: { title: string; url: string }) {
           {connected ? "live" : "disconnected"}
         </span>
       </header>
-      <div className="flex-1 overflow-y-auto p-3 text-sm">
+      <div className="flex-1 min-h-0 overflow-y-scroll p-3 text-sm">
         {events.length === 0 && (
           <p className="opacity-50 text-xs">Waiting for trace events…</p>
         )}

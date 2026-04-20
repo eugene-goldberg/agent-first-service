@@ -42,6 +42,14 @@ def create_app(
     app = FastAPI(title="Orchestrator Service", version="0.1.0")
     app.state.session_maker = session_maker
     app.state.trace_bus = TraceBus()
+
+    from fastapi.middleware.cors import CORSMiddleware
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
     app.state.runner = OrchestrationRunner(
         session_maker=session_maker,
         llm=llm,

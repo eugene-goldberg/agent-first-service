@@ -32,7 +32,7 @@ export function TraceEventRow({ event }: { event: TraceEventT }) {
             {event.kind}
           </span>
           <span className="opacity-60 shrink-0">{ts}</span>
-          <span className="truncate">{event.summary}</span>
+          <span className="break-words whitespace-pre-wrap min-w-0 flex-1">{event.summary}</span>
         </div>
       </button>
       {expanded && (
