@@ -24,7 +24,7 @@ def _row_to_out(row: JobRow) -> OrchestrationOut:
 
 
 @router.post("/orchestrations", status_code=202)
-def start_orchestration(payload: CreateOrchestration, request: Request):
+async def start_orchestration(payload: CreateOrchestration, request: Request):
     runner = request.app.state.runner
     job_id = runner.start(brief=payload.brief)
 
