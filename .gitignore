@@ -33,3 +33,7 @@ dist/
 
 # Smoke test / temp logs
 tmp/
+
+dashboard/node_modules/
+dashboard/.next/
+dashboard/out/

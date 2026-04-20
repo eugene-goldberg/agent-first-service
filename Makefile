@@ -70,6 +70,34 @@ test-all-services:
 test-full:
 	. .venv/bin/activate && pytest tests -v
 
+.PHONY: run-client
+run-client:
+	. .venv/bin/activate && CLIENT_AGENT_REPLAY_DIR=fixtures/llm_recordings/client_landing_page python3 -m services.client_agent.main
+
+.PHONY: run-dashboard
+run-dashboard:
+	cd dashboard && npm run dev
+
+.PHONY: test-client-agent
+test-client-agent:
+	. .venv/bin/activate && pytest tests/services/client_agent -v
+
+.PHONY: test-all-python
+test-all-python:
+	. .venv/bin/activate && pytest tests -v
+
+.PHONY: run-demo
+run-demo:
+	@echo "Open six shells and run:"
+	@echo "  1)  make run-projects"
+	@echo "  2)  make run-people"
+	@echo "  3)  make run-communications"
+	@echo "  4)  make run-orchestrator"
+	@echo "  5)  make run-client"
+	@echo "  6)  make run-dashboard"
+	@echo ""
+	@echo "Then open http://127.0.0.1:3000 in a browser."
+
 .PHONY: clean
 clean:
 	rm -rf $(VENV) .pytest_cache .ruff_cache data
