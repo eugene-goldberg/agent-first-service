@@ -30,3 +30,6 @@ dist/
 
 # OMC orchestration state (not part of source)
 .omc/
+
+# Smoke test / temp logs
+tmp/

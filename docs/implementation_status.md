@@ -55,5 +55,24 @@ _Deviation note: `tests/services/people/conftest.py` is deferred from Task 1 to 
 
 **Next:** Plan 3 — Orchestrator service (`docs/superpowers/plans/2026-04-19-orchestrator-service.md`).
 
-## Plan 3 — not started
+## 2026-04-19 — Orchestrator service increment (Plan 3 complete)
+
+**Plan:** `docs/superpowers/plans/2026-04-19-orchestrator-service.md`
+
+**Completed:**
+- LangGraph-based `OrchestrationGraph` (plan → act → observe → finalize).
+- Pluggable `LLMClient` with `AzureLLMClient` and `ReplayLLMClient` modes.
+- Generic `HTTPToolbox` (GET/POST/PATCH/DELETE) — the only tools the LLM gets.
+- `TraceBus` in-memory pub/sub for live SSE fan-out.
+- `OrchestrationRunner` with DB-backed job + trace persistence and `asyncio.create_task` execution.
+- FastAPI routes: `POST /orchestrations`, `GET /orchestrations`, `GET /orchestrations/{id}`, `GET /orchestrations/{id}/trace`, `GET /sse/orchestrator`.
+- Orchestrator's own hypermedia capability catalog at `GET /` — treats itself as a peer to the leaf services.
+- Recorded LLM fixtures for the landing-page scenario (plan + 5 act steps + finalize).
+
+**Evidence:** all orchestrator tests pass; live E2E smoke test walked through in Task 14.
+
+**Known issue (follow-up):** An intermittent `RuntimeError('Event loop is closed')` was observed during the Task 14 smoke test when an SSE subscriber was active at the moment a new orchestration was spawned. The error propagates correctly as `event: error` and marks the job `failed`; subsequent orchestrations succeed. Suspected race in `OrchestrationRunner` loop acquisition under SSE fan-out. Flagged for Plan 4 hardening.
+
+**Next:** Plan 4 — Client Agent + Dashboard (`docs/superpowers/plans/2026-04-19-client-agent-and-dashboard.md`).
+
 ## Plan 4 — not started

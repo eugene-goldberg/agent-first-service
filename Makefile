@@ -46,6 +46,30 @@ test-communications:
 test-leaf-services:
 	. .venv/bin/activate && pytest tests/services -v
 
+.PHONY: run-orchestrator
+run-orchestrator:
+	. .venv/bin/activate && ORCHESTRATOR_REPLAY_DIR=fixtures/llm_recordings/landing_page python3 -m services.orchestrator.main
+
+.PHONY: test-orchestrator
+test-orchestrator:
+	. .venv/bin/activate && pytest tests/services/orchestrator -v
+
+.PHONY: run-all
+run-all:
+	@echo "Open four shells and run:"
+	@echo "  make run-projects"
+	@echo "  make run-people"
+	@echo "  make run-communications"
+	@echo "  make run-orchestrator"
+
+.PHONY: test-all-services
+test-all-services:
+	. .venv/bin/activate && pytest tests/services -v
+
+.PHONY: test-full
+test-full:
+	. .venv/bin/activate && pytest tests -v
+
 .PHONY: clean
 clean:
 	rm -rf $(VENV) .pytest_cache .ruff_cache data

@@ -54,3 +54,21 @@ External deps: none (sqlite is stdlib).
 | `test_seed.py` | JSON seed loader idempotence | Integration | `pytest tests/services/communications/test_seed.py -v` |
 
 External deps: none.
+
+## Orchestrator service (`tests/services/orchestrator/`)
+
+| Test file | Covers | Type | Run |
+|---|---|---|---|
+| `test_state_and_db.py` | OrchestrationState + JobRow/TraceEventRow | Unit + integration | `pytest tests/services/orchestrator/test_state_and_db.py -v` |
+| `test_trace_bus.py` | TraceBus pub/sub fan-out | Async unit | `pytest tests/services/orchestrator/test_trace_bus.py -v` |
+| `test_fake_llm.py` | ReplayLLMClient + LLMClient.from_env | Unit | `pytest tests/services/orchestrator/test_fake_llm.py -v` |
+| `test_tools.py` | HTTPToolbox verbs | Integration (MockTransport) | `pytest tests/services/orchestrator/test_tools.py -v` |
+| `test_capabilities.py` | `GET /` orchestrator catalog | Integration | `pytest tests/services/orchestrator/test_capabilities.py -v` |
+| `test_graph_replay.py` | End-to-end graph replay against live leaf apps | Integration (ASGITransport) | `pytest tests/services/orchestrator/test_graph_replay.py -v` |
+| `test_orchestrations_endpoint.py` | POST/GET/LIST/TRACE orchestration routes | Integration | `pytest tests/services/orchestrator/test_orchestrations_endpoint.py -v` |
+| `test_sse_stream.py` | `/sse/orchestrator` live streaming | Async integration | `pytest tests/services/orchestrator/test_sse_stream.py -v` |
+| `test_constraint_errors.py` | 404 / 422 envelope semantics | Integration | `pytest tests/services/orchestrator/test_constraint_errors.py -v` |
+
+External deps:
+- `ORCHESTRATOR_REPLAY_DIR` must be set for tests. Default in tests: `fixtures/llm_recordings/landing_page`.
+- For live runs against Azure OpenAI: set `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_DEPLOYMENT`, `AZURE_OPENAI_API_VERSION`, and leave `ORCHESTRATOR_REPLAY_DIR` unset.
