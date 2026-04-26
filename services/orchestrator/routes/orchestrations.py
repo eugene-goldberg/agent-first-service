@@ -26,6 +26,18 @@ def _row_to_out(row: JobRow) -> OrchestrationOut:
 @router.post("/orchestrations", status_code=202)
 async def start_orchestration(payload: CreateOrchestration, request: Request):
     runner = request.app.state.runner
+    try:
+        await runner.ensure_ready()
+    except Exception as exc:
+        raise AgentError(
+            status_code=503,
+            error="orchestrator_unavailable",
+            message="Orchestrator cannot reach required MCP backends.",
+            why=str(exc),
+            try_instead=(
+                "Start projects/people/communications MCP servers and retry."
+            ),
+        ) from exc
     job_id = runner.start(brief=payload.brief)
 
     session_maker = request.app.state.session_maker

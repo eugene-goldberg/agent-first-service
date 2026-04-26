@@ -13,6 +13,7 @@ dependencies = [
     "langchain-core>=0.3,<0.4",
     "langchain-openai>=0.2,<0.4",
     "sse-starlette>=2.1",
+    "mcp>=1.6,<2.0",
 ]
 
 [project.optional-dependencies]
@@ -33,6 +34,9 @@ include = ["agent_protocol*", "services*"]
 testpaths = ["tests"]
 asyncio_mode = "auto"
 addopts = "-v --tb=short"
+markers = [
+    "live: exercises a live external service (e.g. Azure OpenAI). Costs real tokens; keep in the default suite but make filterable for CI.",
+]
 
 [tool.ruff]
 line-length = 100

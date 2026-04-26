@@ -49,6 +49,19 @@ class TaskOut(BaseModel):
     due_date: str | None = None
 
 
+class UpdateProject(BaseModel):
+    name: str | None = DocumentedField(
+        description="Updated short project name.",
+        examples=["Q3 Landing Page (v2)"],
+        default=None,
+    )
+    description: str | None = DocumentedField(
+        description="Updated one-paragraph project description.",
+        examples=["Expanded launch scope with revised milestones."],
+        default=None,
+    )
+
+
 class UpdateTask(BaseModel):
     status: str | None = DocumentedField(
         description="New task status.",

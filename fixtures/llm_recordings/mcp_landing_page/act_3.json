@@ -1,0 +1,6 @@
+{
+  "messages": [{"role": "system", "content": "actor_mcp"}],
+  "response": {
+    "content": "{\"is_final\":true,\"summary\":\"Created the Q3 Launch project and notified Alice via a message.\"}"
+  }
+}

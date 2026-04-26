@@ -1,0 +1,9 @@
+{
+  "messages": [
+    {"role": "system", "content": "planner_mcp"},
+    {"role": "user", "content": "Set up a Q3 launch project and notify Alice."}
+  ],
+  "response": {
+    "content": "{\"steps\":[{\"server\":\"projects\",\"tool\":\"post_projects\",\"rationale\":\"Create the Q3 launch project\"},{\"server\":\"communications\",\"tool\":\"send_message\",\"rationale\":\"Notify Alice that the Q3 launch project is underway\"}]}"
+  }
+}

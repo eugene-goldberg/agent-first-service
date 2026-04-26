@@ -1,5 +1,6 @@
 import asyncio
 import json
+import sys
 
 import pytest
 import httpx
@@ -7,6 +8,10 @@ import httpx
 from services.client_agent.state import ClientTraceEvent
 
 
+@pytest.mark.skipif(
+    sys.version_info >= (3, 14),
+    reason="httpx ASGITransport streaming hangs for SSE on Python 3.14+ in-process",
+)
 @pytest.mark.asyncio
 async def test_client_sse_delivers_published_events(monkeypatch):
     monkeypatch.setenv("CLIENT_AGENT_REPLAY_DIR", "fixtures/llm_recordings/client_landing_page")

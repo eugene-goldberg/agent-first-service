@@ -8,6 +8,11 @@ from services.orchestrator.app import create_app as create_orch_app
 def orchestrator_app(tmp_path, monkeypatch):
     monkeypatch.setenv("ORCHESTRATOR_REPLAY_DIR", "fixtures/llm_recordings/landing_page")
     app = create_orch_app(sqlite_path=str(tmp_path / "o.db"))
+
+    async def _ready_noop() -> None:
+        return None
+
+    app.state.runner.ensure_ready = _ready_noop
     return app
 
 

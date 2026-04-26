@@ -1,0 +1,6 @@
+{
+  "messages": [{"role": "system", "content": "actor_mcp"}],
+  "response": {
+    "content": "{\"server\":\"communications\",\"tool\":\"send_message\",\"arguments\":{\"recipient_id\":\"person_alice\",\"subject\":\"Q3 Launch kicked off\",\"body\":\"The Q3 launch project has been created. Please review the plan.\"},\"rationale\":\"Notify Alice that the Q3 launch project is underway.\",\"is_final\":false}"
+  }
+}

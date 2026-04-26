@@ -1,5 +1,6 @@
 import asyncio
 import json
+import sys
 
 import pytest
 import httpx
@@ -7,6 +8,10 @@ import httpx
 from services.orchestrator.state import TraceEvent
 
 
+@pytest.mark.skipif(
+    sys.version_info >= (3, 14),
+    reason="httpx ASGITransport streaming hangs for SSE on Python 3.14+ in-process",
+)
 @pytest.mark.asyncio
 async def test_sse_stream_emits_published_events(tmp_path, monkeypatch):
     monkeypatch.setenv("ORCHESTRATOR_REPLAY_DIR", "fixtures/llm_recordings/landing_page")

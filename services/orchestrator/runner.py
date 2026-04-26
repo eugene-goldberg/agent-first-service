@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 import json
 import uuid
-from typing import Any
+from typing import Any, Literal, TYPE_CHECKING
 
 import httpx
 
@@ -13,6 +13,9 @@ from services.orchestrator.llm import LLMClient
 from services.orchestrator.state import OrchestrationState, TraceEvent
 from services.orchestrator.tools import HTTPToolbox
 from services.orchestrator.trace_bus import TraceBus
+
+if TYPE_CHECKING:
+    from services.orchestrator.mcp_tools import MCPToolbox
 
 
 class OrchestrationRunner:
@@ -26,6 +29,8 @@ class OrchestrationRunner:
         projects_base: str,
         people_base: str,
         comms_base: str,
+        mode: Literal["http", "mcp"] = "http",
+        mcp_toolbox: "MCPToolbox | None" = None,
     ) -> None:
         self._session_maker = session_maker
         self._llm = llm
@@ -34,6 +39,27 @@ class OrchestrationRunner:
         self._projects_base = projects_base
         self._people_base = people_base
         self._comms_base = comms_base
+        self._mode = mode
+        self._mcp_toolbox = mcp_toolbox
+        self._ready = False
+        self._ready_lock = asyncio.Lock()
+
+    async def ensure_ready(self) -> None:
+        """Fail fast if required MCP backends are unreachable."""
+        if self._ready:
+            return
+        async with self._ready_lock:
+            if self._ready:
+                return
+            if self._mode != "mcp" or self._mcp_toolbox is None:
+                raise RuntimeError("Orchestrator is configured without MCP toolbox.")
+            for server in ("projects", "people", "communications"):
+                tools = await self._mcp_toolbox.list_tools(server)
+                if not tools:
+                    raise RuntimeError(
+                        f"MCP server {server!r} is reachable but advertises no tools."
+                    )
+            self._ready = True
 
     def start(self, brief: str) -> str:
         job_id = f"job_{uuid.uuid4().hex[:8]}"
@@ -63,6 +89,8 @@ class OrchestrationRunner:
             projects_base=self._projects_base,
             people_base=self._people_base,
             comms_base=self._comms_base,
+            mode=self._mode,
+            mcp_toolbox=self._mcp_toolbox,
         )
         state = OrchestrationState(job_id=job_id, brief=brief)
 

@@ -10,6 +10,11 @@ def orchestrator_client(tmp_path, monkeypatch):
     monkeypatch.setenv("ORCHESTRATOR_REPLAY_DIR", "fixtures/llm_recordings/landing_page")
     from services.orchestrator.app import create_app
     app = create_app(sqlite_path=str(tmp_path / "orch.db"))
+    
+    async def _ready_noop() -> None:
+        return None
+    app.state.runner.ensure_ready = _ready_noop
+
     return TestClient(app)
 
 

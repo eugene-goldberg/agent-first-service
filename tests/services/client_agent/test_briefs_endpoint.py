@@ -3,13 +3,29 @@ import asyncio
 import pytest
 import httpx
 
+from services.orchestrator.db import JobRow
 from services.orchestrator.app import create_app as create_orch_app
 
 
 @pytest.fixture
 def orchestrator_app(tmp_path, monkeypatch):
     monkeypatch.setenv("ORCHESTRATOR_REPLAY_DIR", "fixtures/llm_recordings/landing_page")
-    return create_orch_app(sqlite_path=str(tmp_path / "o.db"))
+    app = create_orch_app(sqlite_path=str(tmp_path / "o.db"))
+
+    async def _ready_noop() -> None:
+        return None
+
+    async def _run_immediate_complete(*, job_id: str, brief: str) -> None:
+        with app.state.runner._session_maker() as session:
+            row = session.get(JobRow, job_id)
+            if row is not None:
+                row.status = "completed"
+                row.final_summary = f"completed brief: {brief}"
+                session.commit()
+
+    app.state.runner.ensure_ready = _ready_noop
+    app.state.runner._run = _run_immediate_complete
+    return app
 
 
 @pytest.fixture

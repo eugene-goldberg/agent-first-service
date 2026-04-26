@@ -50,6 +50,28 @@ def create_app(
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+    # The orchestrator now runs MCP-only. ``ORCHESTRATOR_TOOL_MODE`` is kept
+    # only as a guardrail so stale env files fail fast.
+    configured_mode = os.environ.get("ORCHESTRATOR_TOOL_MODE")
+    if configured_mode is not None and configured_mode.strip().lower() != "mcp":
+        raise ValueError(
+            "ORCHESTRATOR_TOOL_MODE no longer supports HTTP mode; "
+            "unset it or set it to 'mcp'."
+        )
+    from services.orchestrator.mcp_tools import MCPToolbox
+    mcp_toolbox = MCPToolbox({
+        "projects": os.environ.get(
+            "ORCHESTRATOR_MCP_PROJECTS_URL", "http://localhost:9001"
+        ),
+        "people": os.environ.get(
+            "ORCHESTRATOR_MCP_PEOPLE_URL", "http://localhost:9002"
+        ),
+        "communications": os.environ.get(
+            "ORCHESTRATOR_MCP_COMMUNICATIONS_URL", "http://localhost:9003"
+        ),
+    })
+
     app.state.runner = OrchestrationRunner(
         session_maker=session_maker,
         llm=llm,
@@ -58,6 +80,8 @@ def create_app(
         projects_base=projects_base or os.environ.get("PROJECTS_BASE_URL", "http://127.0.0.1:8001"),
         people_base=people_base or os.environ.get("PEOPLE_BASE_URL", "http://127.0.0.1:8002"),
         comms_base=comms_base or os.environ.get("COMMUNICATIONS_BASE_URL", "http://127.0.0.1:8003"),
+        mode="mcp",
+        mcp_toolbox=mcp_toolbox,
     )
 
     register_error_handler(app)

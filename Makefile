@@ -48,7 +48,19 @@ test-leaf-services:
 
 .PHONY: run-orchestrator
 run-orchestrator:
-	. .venv/bin/activate && ORCHESTRATOR_REPLAY_DIR=fixtures/llm_recordings/landing_page python3 -m services.orchestrator.main
+	. .venv/bin/activate && ORCHESTRATOR_TOOL_MODE=mcp ORCHESTRATOR_REPLAY_DIR=fixtures/llm_recordings/mcp_landing_page python3 -m services.orchestrator.main
+
+.PHONY: run-mcp-projects
+run-mcp-projects:
+	. .venv/bin/activate && python3 -m services.projects.mcp_main --sse --host 127.0.0.1 --port 9001 --sqlite-path data/projects.db
+
+.PHONY: run-mcp-people
+run-mcp-people:
+	. .venv/bin/activate && python3 -m services.people.mcp_main --sse --host 127.0.0.1 --port 9002 --sqlite-path data/people.db
+
+.PHONY: run-mcp-communications
+run-mcp-communications:
+	. .venv/bin/activate && python3 -m services.communications.mcp_main --sse --host 127.0.0.1 --port 9003 --sqlite-path data/communications.db
 
 .PHONY: test-orchestrator
 test-orchestrator:
@@ -56,10 +68,10 @@ test-orchestrator:
 
 .PHONY: run-all
 run-all:
-	@echo "Open four shells and run:"
-	@echo "  make run-projects"
-	@echo "  make run-people"
-	@echo "  make run-communications"
+	@echo "Open four shells and run (MCP path):"
+	@echo "  make run-mcp-projects"
+	@echo "  make run-mcp-people"
+	@echo "  make run-mcp-communications"
 	@echo "  make run-orchestrator"
 
 .PHONY: test-all-services
@@ -88,10 +100,10 @@ test-all-python:
 
 .PHONY: run-demo
 run-demo:
-	@echo "Open six shells and run:"
-	@echo "  1)  make run-projects"
-	@echo "  2)  make run-people"
-	@echo "  3)  make run-communications"
+	@echo "Open six shells and run (MCP path):"
+	@echo "  1)  make run-mcp-projects"
+	@echo "  2)  make run-mcp-people"
+	@echo "  3)  make run-mcp-communications"
 	@echo "  4)  make run-orchestrator"
 	@echo "  5)  make run-client"
 	@echo "  6)  make run-dashboard"

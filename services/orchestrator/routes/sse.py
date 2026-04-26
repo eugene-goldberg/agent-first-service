@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 
 from fastapi import APIRouter, Request
-from sse_starlette.sse import EventSourceResponse
+from starlette.responses import StreamingResponse
 
 router = APIRouter()
 
@@ -16,16 +16,29 @@ async def stream_trace(request: Request):
 
     async def event_generator():
         async with bus.subscribe() as queue:
+            # Prime the stream immediately for in-process test transports.
+            yield b": stream-open\n\n"
             while True:
                 if await request.is_disconnected():
                     break
                 try:
                     event = await asyncio.wait_for(queue.get(), timeout=_IDLE_TIMEOUT)
                 except asyncio.TimeoutError:
+                    # Keep the connection active during idle windows.
+                    yield b": keepalive\n\n"
                     continue
-                yield {
-                    "event": event.kind,
-                    "data": event.model_dump_json(),
-                }
+                payload = (
+                    f"event: {event.kind}\n"
+                    f"data: {event.model_dump_json()}\n\n"
+                ).encode("utf-8")
+                yield payload
 
-    return EventSourceResponse(event_generator(), ping=15)
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )

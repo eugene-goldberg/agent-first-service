@@ -1,0 +1,6 @@
+{
+  "messages": [{"role": "system", "content": "actor_mcp"}],
+  "response": {
+    "content": "{\"server\":\"projects\",\"tool\":\"post_projects\",\"arguments\":{\"name\":\"Q3 Launch\",\"description\":\"Q3 launch coordination project.\"},\"rationale\":\"Create the Q3 launch project so downstream steps reference it.\",\"is_final\":false}"
+  }
+}

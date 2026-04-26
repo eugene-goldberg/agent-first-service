@@ -20,10 +20,16 @@ class TraceEvent(BaseModel):
 
 
 class OrchestrationStep(BaseModel):
-    verb: Literal["GET", "POST", "PATCH", "DELETE"]
-    url: str
+    # HTTP-mode fields: verb/url populated for HTTP dispatch.
+    # MCP-mode fields: server/tool populated; verb/url left as None. ``body``
+    # is repurposed to carry MCP ``arguments`` so ``_dispatch`` can remain a
+    # thin dispatch without copying fields around.
+    verb: Literal["GET", "POST", "PATCH", "DELETE"] | None = None
+    url: str | None = None
     body: dict[str, Any] | None = None
     rationale: str | None = None
+    server: str | None = None
+    tool: str | None = None
 
 
 class OrchestrationState(BaseModel):
