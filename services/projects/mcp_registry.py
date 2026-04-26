@@ -13,7 +13,14 @@ exactly one source of truth for the Projects service's tool surface.
 from __future__ import annotations
 
 from agent_protocol.mcp_adapter import ToolRegistryEntry
-from services.projects.models import CreateProject, CreateTask, UpdateProject, UpdateTask
+from services.projects.models import (
+    CreateMilestone,
+    CreateProject,
+    CreateTask,
+    UpdateMilestone,
+    UpdateProject,
+    UpdateTask,
+)
 
 
 def build_tool_registry() -> dict[str, ToolRegistryEntry]:
@@ -55,6 +62,27 @@ def build_tool_registry() -> dict[str, ToolRegistryEntry]:
             "PATCH",
             UpdateTask,
             ["task_id"],
+            [],
+        ),
+        "get_projects_id_milestones": (
+            "/projects/{project_id}/milestones",
+            "GET",
+            None,
+            ["project_id"],
+            [],
+        ),
+        "post_projects_id_milestones": (
+            "/projects/{project_id}/milestones",
+            "POST",
+            CreateMilestone,
+            ["project_id"],
+            [],
+        ),
+        "patch_milestones_id": (
+            "/milestones/{milestone_id}",
+            "PATCH",
+            UpdateMilestone,
+            ["milestone_id"],
             [],
         ),
         "get_tasks_assignee_id_status_status_milestone_id": (

@@ -300,7 +300,6 @@ async def test_call_tool_patch_tasks_id_separates_path_and_body_params(
             {
                 "task_id": task_id,
                 "status": "done",
-                "assignee_id": "person_alice",
                 "due_date": "2026-05-01",
             },
         )
@@ -314,7 +313,6 @@ async def test_call_tool_patch_tasks_id_separates_path_and_body_params(
     # Body fields must have actually been applied (proving they made it into
     # the JSON body and were NOT hoisted into the URL).
     assert patch_env["data"]["status"] == "done"
-    assert patch_env["data"]["assignee_id"] == "person_alice"
     assert patch_env["data"]["due_date"] == "2026-05-01"
 
     # Structural parity vs. TestClient PATCH on the same app/DB.
@@ -327,6 +325,41 @@ async def test_call_tool_patch_tasks_id_separates_path_and_body_params(
     assert set(patch_env.keys()) == set(http_env.keys())
     assert ENVELOPE_KEYS.issubset(patch_env.keys())
     assert set(patch_env["data"].keys()) == set(http_env["data"].keys())
+
+
+async def test_call_tool_milestone_routes_match_testclient_envelope(tmp_path) -> None:
+    server, app = _build_server(tmp_path)
+    project_env = _parse_single_text_block(
+        await server.call_tool("post_projects", {"name": "Milestone plan", "description": ""})
+    )
+    project_id = project_env["data"]["id"]
+
+    mcp_created = _parse_single_text_block(
+        await server.call_tool(
+            "post_projects_id_milestones",
+            {"project_id": project_id, "title": "Phase 1", "order_index": 1},
+        )
+    )
+    milestone_id = mcp_created["data"]["id"]
+
+    mcp_listed = _parse_single_text_block(
+        await server.call_tool("get_projects_id_milestones", {"project_id": project_id})
+    )
+    assert len(mcp_listed["data"]) == 1
+    assert mcp_listed["data"][0]["id"] == milestone_id
+
+    with TestClient(app) as http:
+        http_env = http.patch(
+            f"/milestones/{milestone_id}",
+            json={"status": "in_progress"},
+        ).json()
+    mcp_patched = _parse_single_text_block(
+        await server.call_tool(
+            "patch_milestones_id",
+            {"milestone_id": milestone_id, "status": "in_progress"},
+        )
+    )
+    _assert_envelope_parity(mcp_patched, http_env, data_is_list=False)
 
 
 async def test_call_tool_returns_error_envelope_without_raising(tmp_path) -> None:

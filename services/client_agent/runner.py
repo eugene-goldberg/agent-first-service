@@ -25,7 +25,8 @@ brief should be substituted verbatim before sending."""
 
 
 SUMMARY_SYSTEM = """Summarize the user-visible outcome of this brief in one
-paragraph of plain English. No markdown. No emojis."""
+paragraph of plain English. Mention milestone planning and assignment outcomes
+when present. No markdown. No emojis."""
 
 
 class ClientAgentRunner:

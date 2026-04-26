@@ -35,8 +35,10 @@ export default function Page() {
           <TracePanel title="Orchestrator — /sse/orchestrator" url={`${ORCHESTRATOR_URL}/sse/orchestrator`} />
         </div>
 
-        <div className="col-span-4 min-h-0 grid grid-rows-4 gap-4">
-          <CreatedProjectPanel />
+        <div className="col-span-4 min-h-0 flex flex-col gap-4">
+          <div className="flex-1 min-h-0">
+            <CreatedProjectPanel />
+          </div>
           <ServiceSnapshot title="Projects (:8001)" url={`${PROJECTS_URL}/`} />
           <ServiceSnapshot title="People (:8002)" url={`${PEOPLE_URL}/`} />
           <ServiceSnapshot title="Communications (:8003)" url={`${COMMUNICATIONS_URL}/`} />

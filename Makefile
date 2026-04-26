@@ -30,6 +30,10 @@ run-projects:
 run-people:
 	. .venv/bin/activate && PEOPLE_SEED=fixtures/demo-seed/people.json python3 -m services.people.main
 
+.PHONY: run-people-shared-db
+run-people-shared-db:
+	. .venv/bin/activate && python3 -m services.people.main --sqlite data/people.db
+
 .PHONY: run-communications
 run-communications:
 	. .venv/bin/activate && COMMUNICATIONS_SEED=fixtures/demo-seed/communications.json python3 -m services.communications.main
@@ -48,6 +52,10 @@ test-leaf-services:
 
 .PHONY: run-orchestrator
 run-orchestrator:
+	. .venv/bin/activate && ORCHESTRATOR_TOOL_MODE=mcp python3 -m services.orchestrator.main
+
+.PHONY: run-orchestrator-replay
+run-orchestrator-replay:
 	. .venv/bin/activate && ORCHESTRATOR_TOOL_MODE=mcp ORCHESTRATOR_REPLAY_DIR=fixtures/llm_recordings/mcp_landing_page python3 -m services.orchestrator.main
 
 .PHONY: run-mcp-projects
@@ -56,7 +64,7 @@ run-mcp-projects:
 
 .PHONY: run-mcp-people
 run-mcp-people:
-	. .venv/bin/activate && python3 -m services.people.mcp_main --sse --host 127.0.0.1 --port 9002 --sqlite-path data/people.db
+	. .venv/bin/activate && PEOPLE_SEED=fixtures/demo-seed/people.json python3 -m services.people.mcp_main --sse --host 127.0.0.1 --port 9002 --sqlite-path data/people.db
 
 .PHONY: run-mcp-communications
 run-mcp-communications:
@@ -84,10 +92,18 @@ test-full:
 
 .PHONY: run-client
 run-client:
+	. .venv/bin/activate && python3 -m services.client_agent.main
+
+.PHONY: run-client-replay
+run-client-replay:
 	. .venv/bin/activate && CLIENT_AGENT_REPLAY_DIR=fixtures/llm_recordings/client_landing_page python3 -m services.client_agent.main
 
 .PHONY: run-dashboard
 run-dashboard:
+	cd dashboard && npm run build && npm run start
+
+.PHONY: run-dashboard-dev
+run-dashboard-dev:
 	cd dashboard && npm run dev
 
 .PHONY: test-client-agent
@@ -100,15 +116,22 @@ test-all-python:
 
 .PHONY: run-demo
 run-demo:
-	@echo "Open six shells and run (MCP path):"
+	@echo "Open seven shells and run (LIVE MCP path, no replay fixtures):"
 	@echo "  1)  make run-mcp-projects"
 	@echo "  2)  make run-mcp-people"
 	@echo "  3)  make run-mcp-communications"
-	@echo "  4)  make run-orchestrator"
-	@echo "  5)  make run-client"
-	@echo "  6)  make run-dashboard"
+	@echo "  4)  make run-people-shared-db   # required for Projects assignment validation"
+	@echo "  5)  make run-orchestrator"
+	@echo "  6)  make run-client"
+	@echo "  7)  make run-dashboard"
 	@echo ""
+	@echo "Before step 5/6, export AZURE_OPENAI_* env vars in those shells."
+	@echo "Use make run-orchestrator-replay / make run-client-replay only for offline demos."
 	@echo "Then open http://127.0.0.1:3000 in a browser."
+
+.PHONY: check-live-stack
+check-live-stack:
+	. .venv/bin/activate && python3 scripts/check_live_stack.py
 
 .PHONY: clean
 clean:

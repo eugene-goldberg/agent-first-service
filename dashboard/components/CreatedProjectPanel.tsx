@@ -17,11 +17,30 @@ type Task = {
   status: string;
   assignee_id: string | null;
   due_date: string | null;
+  milestone_id: string | null;
+};
+
+type Milestone = {
+  id: string;
+  project_id: string;
+  title: string;
+  due_date: string | null;
+  status: string;
+  order_index: number | null;
+};
+
+type Person = {
+  id: string;
+  name: string;
+  role: string;
+  available: boolean;
 };
 
 export function CreatedProjectPanel({ refreshMs = 2000 }: { refreshMs?: number }) {
   const [project, setProject] = useState<Project | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [milestones, setMilestones] = useState<Milestone[]>([]);
+  const [people, setPeople] = useState<Record<string, Person>>({});
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -42,13 +61,21 @@ export function CreatedProjectPanel({ refreshMs = 2000 }: { refreshMs?: number }
           return;
         }
         const latest = list[list.length - 1];
-        const taskResp = await fetch(`${PROJECTS_URL}/projects/${latest.id}/tasks`, {
-          cache: "no-store",
-        });
+        const [taskResp, milestoneResp, peopleResp] = await Promise.all([
+          fetch(`${PROJECTS_URL}/projects/${latest.id}/tasks`, { cache: "no-store" }),
+          fetch(`${PROJECTS_URL}/projects/${latest.id}/milestones`, { cache: "no-store" }),
+          fetch(`http://127.0.0.1:8002/people`, { cache: "no-store" }),
+        ]);
         const taskBody = taskResp.ok ? await taskResp.json() : { data: [] };
+        const milestoneBody = milestoneResp.ok ? await milestoneResp.json() : { data: [] };
+        const peopleBody = peopleResp.ok ? await peopleResp.json() : { data: [] };
+        const peopleList: Person[] = Array.isArray(peopleBody.data) ? peopleBody.data : [];
+        const peopleMap = Object.fromEntries(peopleList.map((p) => [p.id, p]));
         if (!cancelled) {
           setProject(latest);
           setTasks(Array.isArray(taskBody.data) ? taskBody.data : []);
+          setMilestones(Array.isArray(milestoneBody.data) ? milestoneBody.data : []);
+          setPeople(peopleMap);
           setError(null);
         }
       } catch (e) {
@@ -96,19 +123,62 @@ export function CreatedProjectPanel({ refreshMs = 2000 }: { refreshMs?: number }
               {tasks.length === 0 ? (
                 <p className="opacity-50 text-xs">No tasks yet.</p>
               ) : (
-                <ul className="space-y-1">
-                  {tasks.map((t) => (
-                    <li key={t.id} className="flex gap-3 text-xs">
-                      <span className="shrink-0 w-16 text-emerald-400 uppercase tracking-wider">
-                        {t.status}
-                      </span>
-                      <span className="break-words flex-1">{t.title}</span>
-                      <span className="opacity-50 shrink-0">
-                        {t.assignee_id ?? "unassigned"}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
+                <div className="space-y-3">
+                  {milestones.map((m) => {
+                    const milestoneTasks = tasks.filter((t) => t.milestone_id === m.id);
+                    return (
+                      <div key={m.id} className="border border-gray-800 rounded-md p-2">
+                        <div className="flex items-center justify-between mb-1">
+                          <div className="text-xs text-amber-300 break-words">{m.title}</div>
+                          <div className="text-[10px] uppercase tracking-wider opacity-60">
+                            {m.status}
+                          </div>
+                        </div>
+                        {milestoneTasks.length === 0 ? (
+                          <p className="opacity-50 text-xs">No tasks in this milestone.</p>
+                        ) : (
+                          <ul className="space-y-1">
+                            {milestoneTasks.map((t) => {
+                              const assignee = t.assignee_id ? people[t.assignee_id] : null;
+                              return (
+                                <li key={t.id} className="flex gap-3 text-xs">
+                                  <span className="shrink-0 w-16 text-emerald-400 uppercase tracking-wider">
+                                    {t.status}
+                                  </span>
+                                  <span className="break-words flex-1">{t.title}</span>
+                                  <span className="opacity-70 shrink-0">
+                                    {assignee ? `${assignee.name} (${assignee.role})` : (t.assignee_id ?? "unassigned")}
+                                  </span>
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        )}
+                      </div>
+                    );
+                  })}
+                  {tasks.some((t) => !t.milestone_id) && (
+                    <div className="border border-gray-800 rounded-md p-2">
+                      <div className="text-xs text-amber-300 mb-1">Unassigned to milestone</div>
+                      <ul className="space-y-1">
+                        {tasks.filter((t) => !t.milestone_id).map((t) => {
+                          const assignee = t.assignee_id ? people[t.assignee_id] : null;
+                          return (
+                            <li key={t.id} className="flex gap-3 text-xs">
+                              <span className="shrink-0 w-16 text-emerald-400 uppercase tracking-wider">
+                                {t.status}
+                              </span>
+                              <span className="break-words flex-1">{t.title}</span>
+                              <span className="opacity-70 shrink-0">
+                                {assignee ? `${assignee.name} (${assignee.role})` : (t.assignee_id ?? "unassigned")}
+                              </span>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </div>
+                  )}
+                </div>
               )}
             </div>
           </div>

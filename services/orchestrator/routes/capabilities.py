@@ -55,6 +55,7 @@ def root(request: Request):
             description=(
                 "Agent-first orchestrator. Accepts natural-language briefs, plans "
                 "multi-step work against the Projects/People/Communications services, "
+                "including milestone-first project plans with validated assignments, "
                 "and streams its reasoning trace over SSE. Exposes itself using the "
                 "SAME hypermedia protocol as the leaf services so the client agent "
                 "can consume it identically."

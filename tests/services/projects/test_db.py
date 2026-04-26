@@ -10,7 +10,7 @@ def test_can_insert_project_task_milestone(session):
         status="todo",
         assignee_id=None,
     )
-    milestone = MilestoneRow(id="ms_1", project_id="proj_1", name="v1 launch")
+    milestone = MilestoneRow(id="ms_1", project_id="proj_1", name="v1 launch", order_index=1)
 
     session.add_all([proj, task, milestone])
     session.commit()
@@ -18,6 +18,7 @@ def test_can_insert_project_task_milestone(session):
     assert session.get(ProjectRow, "proj_1").name == "Demo"
     assert session.get(TaskRow, "task_1").title == "copy"
     assert session.get(MilestoneRow, "ms_1").name == "v1 launch"
+    assert session.get(MilestoneRow, "ms_1").status == "planned"
 
 
 def test_task_status_defaults_to_todo(session):

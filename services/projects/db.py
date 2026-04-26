@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pathlib
 
-from sqlalchemy import String, ForeignKey, create_engine
+from sqlalchemy import String, ForeignKey, create_engine, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy.orm import sessionmaker
@@ -30,6 +30,9 @@ class TaskRow(Base):
     status: Mapped[str] = mapped_column(String, default="todo", nullable=False)
     assignee_id: Mapped[str | None] = mapped_column(String, nullable=True)
     due_date: Mapped[str | None] = mapped_column(String, nullable=True)
+    milestone_id: Mapped[str | None] = mapped_column(
+        ForeignKey("milestones.id"), nullable=True
+    )
 
     project: Mapped[ProjectRow] = relationship(back_populates="tasks")
 
@@ -40,6 +43,8 @@ class MilestoneRow(Base):
     project_id: Mapped[str] = mapped_column(ForeignKey("projects.id"))
     name: Mapped[str] = mapped_column(String, nullable=False)
     due_date: Mapped[str | None] = mapped_column(String, nullable=True)
+    status: Mapped[str] = mapped_column(String, nullable=False, default="planned")
+    order_index: Mapped[int | None] = mapped_column(nullable=True)
 
     project: Mapped[ProjectRow] = relationship(back_populates="milestones")
 
@@ -51,3 +56,25 @@ def make_engine(sqlite_path: pathlib.Path | str) -> Engine:
 
 def make_sessionmaker(engine: Engine) -> sessionmaker:
     return sessionmaker(bind=engine, expire_on_commit=False)
+
+
+def ensure_backward_compatible_schema(engine: Engine) -> None:
+    """Best-effort additive migration for local SQLite dev/test databases."""
+    with engine.begin() as conn:
+        task_cols = {
+            row[1]
+            for row in conn.execute(text("PRAGMA table_info(tasks)")).fetchall()
+        }
+        if "milestone_id" not in task_cols:
+            conn.execute(text("ALTER TABLE tasks ADD COLUMN milestone_id VARCHAR"))
+
+        milestone_cols = {
+            row[1]
+            for row in conn.execute(text("PRAGMA table_info(milestones)")).fetchall()
+        }
+        if "status" not in milestone_cols:
+            conn.execute(
+                text("ALTER TABLE milestones ADD COLUMN status VARCHAR NOT NULL DEFAULT 'planned'")
+            )
+        if "order_index" not in milestone_cols:
+            conn.execute(text("ALTER TABLE milestones ADD COLUMN order_index INTEGER"))

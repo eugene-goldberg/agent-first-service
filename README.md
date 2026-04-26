@@ -34,9 +34,13 @@ make install
 - `make run-projects` - run projects HTTP service on `:8001` (reload enabled)
 - `make run-people` - run people HTTP service on `:8002` with demo seed
 - `make run-communications` - run communications HTTP service on `:8003` with demo seed
-- `make run-orchestrator` - run orchestrator on `:8000` in MCP mode with replay fixtures
-- `make run-client` - run client agent on `:8080` with replay fixtures
-- `make run-dashboard` - run Next.js dashboard on `:3000`
+- `make run-orchestrator` - run orchestrator on `:8000` in MCP mode using live Azure LLM (no fixtures)
+- `make run-client` - run client agent on `:8080` using live Azure LLM (no fixtures)
+- `make run-orchestrator-replay` - run orchestrator on `:8000` with replay fixtures (offline mode)
+- `make run-client-replay` - run client agent on `:8080` with replay fixtures (offline mode)
+- `make run-dashboard` - run stable production dashboard on `:3000` (build + start)
+- `make run-dashboard-dev` - run Next.js dashboard dev server on `:3000` (for UI development)
+- `make run-people-shared-db` - run People HTTP service on `:8002` against `data/people.db` (used by Projects assignment validation)
 
 ### Run MCP Service Commands
 
@@ -48,18 +52,42 @@ make install
 
 - `make run-all` - print shell instructions for MCP service + orchestrator startup
 - `make run-demo` - print shell instructions for full demo startup (MCP + client + dashboard)
+- `make check-live-stack` - verify all live endpoints/services are reachable before running a brief
 
 ## Demo Startup (MCP Path)
 
-In separate terminals:
+In separate terminals (live path):
 
 ```bash
 make run-mcp-projects
 make run-mcp-people
 make run-mcp-communications
+make run-people-shared-db
 make run-orchestrator
 make run-client
 make run-dashboard
 ```
 
+Create a local env file at project root (preferred, no terminal exports needed):
+
+```bash
+cat > .env.local <<'EOF'
+AZURE_OPENAI_ENDPOINT=...
+AZURE_OPENAI_API_KEY=...
+AZURE_OPENAI_DEPLOYMENT=...
+AZURE_OPENAI_API_VERSION=...
+EOF
+```
+
+`run-orchestrator`, `run-client`, and `check-live-stack` auto-load `.env.local`
+(or `.env`). If you need a custom path, set `AGENT_FIRST_ENV_FILE=/path/to/envfile`.
+
 Then open [http://127.0.0.1:3000](http://127.0.0.1:3000).
+
+Before submitting a brief, run:
+
+```bash
+make check-live-stack
+```
+
+This validates MCP SSE servers (`:9001/:9002/:9003`), People HTTP (`:8002`), orchestrator (`:8000`), client agent (`:8080`), dashboard (`:3000`), and required `AZURE_OPENAI_*` env vars.

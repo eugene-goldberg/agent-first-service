@@ -34,6 +34,7 @@ def load_seed(session_maker: sessionmaker, fixture_path: pathlib.Path | str) -> 
                         status=t.get("status", "todo"),
                         assignee_id=t.get("assignee_id"),
                         due_date=t.get("due_date"),
+                        milestone_id=t.get("milestone_id"),
                     )
                     s.add(task)
                 else:
@@ -41,15 +42,23 @@ def load_seed(session_maker: sessionmaker, fixture_path: pathlib.Path | str) -> 
                     task.status = t.get("status", "todo")
                     task.assignee_id = t.get("assignee_id")
                     task.due_date = t.get("due_date")
+                    task.milestone_id = t.get("milestone_id")
 
             for m in p.get("milestones", []):
                 milestone = s.get(MilestoneRow, m["id"])
                 if milestone is None:
                     milestone = MilestoneRow(
-                        id=m["id"], project_id=p["id"], name=m["name"], due_date=m.get("due_date")
+                        id=m["id"],
+                        project_id=p["id"],
+                        name=m.get("name", m.get("title", "")),
+                        due_date=m.get("due_date"),
+                        status=m.get("status", "planned"),
+                        order_index=m.get("order_index"),
                     )
                     s.add(milestone)
                 else:
-                    milestone.name = m["name"]
+                    milestone.name = m.get("name", m.get("title", ""))
                     milestone.due_date = m.get("due_date")
+                    milestone.status = m.get("status", "planned")
+                    milestone.order_index = m.get("order_index")
         s.commit()

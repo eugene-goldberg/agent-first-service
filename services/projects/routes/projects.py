@@ -40,6 +40,7 @@ def create_project(body: CreateProject, request: Request) -> dict:
         related=["/projects"],
         suggested_next={
             "add_tasks": f"/projects/{out.id}/tasks",
+            "add_milestones": f"/projects/{out.id}/milestones",
             "view_project": f"/projects/{out.id}",
         },
     )
@@ -81,9 +82,10 @@ def get_project(project_id: str, request: Request) -> dict:
     envelope = AgentResponse[ProjectOut](
         data=out,
         self_link=f"/projects/{out.id}",
-        related=[f"/projects/{out.id}/tasks", "/projects"],
+        related=[f"/projects/{out.id}/tasks", f"/projects/{out.id}/milestones", "/projects"],
         suggested_next={
             "list_tasks": f"/projects/{out.id}/tasks",
+            "list_milestones": f"/projects/{out.id}/milestones",
             "update": f"/projects/{out.id}",
         },
     )
@@ -126,6 +128,6 @@ def patch_project(project_id: str, body: dict, request: Request) -> dict:
     envelope = AgentResponse[ProjectOut](
         data=out,
         self_link=f"/projects/{out.id}",
-        related=[f"/projects/{out.id}/tasks"],
+        related=[f"/projects/{out.id}/tasks", f"/projects/{out.id}/milestones"],
     )
     return envelope.model_dump(by_alias=True, mode="json")

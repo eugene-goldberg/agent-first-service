@@ -43,8 +43,38 @@ _CAPABILITIES = [
         intent="create a task under a project",
         method="POST",
         path="/projects/{id}/tasks",
-        example_body={"title": "Write copy", "assignee_id": None, "due_date": "2026-05-20"},
+        example_body={
+            "title": "Write copy",
+            "assignee_id": None,
+            "due_date": "2026-05-20",
+            "milestone_id": "ms_abc123",
+        },
         returns="Task resource",
+    ),
+    Capability(
+        intent="list milestones belonging to a project plan",
+        method="GET",
+        path="/projects/{id}/milestones",
+        returns="list of Milestone resources",
+    ),
+    Capability(
+        intent="create a milestone under a project",
+        method="POST",
+        path="/projects/{id}/milestones",
+        example_body={
+            "title": "Design approved",
+            "due_date": "2026-05-15",
+            "status": "planned",
+            "order_index": 1,
+        },
+        returns="Milestone resource",
+    ),
+    Capability(
+        intent="update a milestone",
+        method="PATCH",
+        path="/milestones/{id}",
+        example_body={"status": "in_progress"},
+        returns="Updated Milestone resource",
     ),
     Capability(
         intent="update a task",
@@ -72,5 +102,5 @@ def capabilities() -> dict:
             "_suggested_next links to perform multi-step workflows."
         ),
         capabilities=_CAPABILITIES,
-        related=["/projects", "/tasks"],
+        related=["/projects", "/tasks", "/milestones"],
     )

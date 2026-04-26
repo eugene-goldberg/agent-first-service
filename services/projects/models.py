@@ -38,6 +38,11 @@ class CreateTask(BaseModel):
         examples=["2026-05-20", None],
         default=None,
     )
+    milestone_id: str | None = DocumentedField(
+        description="Optional milestone id this task belongs to.",
+        examples=["ms_abc123", None],
+        default=None,
+    )
 
 
 class TaskOut(BaseModel):
@@ -47,6 +52,38 @@ class TaskOut(BaseModel):
     status: str
     assignee_id: str | None = None
     due_date: str | None = None
+    milestone_id: str | None = None
+
+
+class CreateMilestone(BaseModel):
+    title: str = DocumentedField(
+        description="Short milestone title.",
+        examples=["MVP complete", "Launch readiness"],
+    )
+    due_date: str | None = DocumentedField(
+        description="Optional milestone due date in ISO 8601 (YYYY-MM-DD).",
+        examples=["2026-06-01", None],
+        default=None,
+    )
+    status: str = DocumentedField(
+        description="Milestone status.",
+        examples=["planned", "in_progress", "done"],
+        default="planned",
+    )
+    order_index: int | None = DocumentedField(
+        description="Optional display order index within the project plan.",
+        examples=[1, 2, None],
+        default=None,
+    )
+
+
+class MilestoneOut(BaseModel):
+    id: str
+    project_id: str
+    title: str
+    due_date: str | None = None
+    status: str
+    order_index: int | None = None
 
 
 class UpdateProject(BaseModel):
@@ -76,5 +113,33 @@ class UpdateTask(BaseModel):
     due_date: str | None = DocumentedField(
         description="New due date in ISO 8601 (YYYY-MM-DD).",
         examples=["2026-05-20"],
+        default=None,
+    )
+    milestone_id: str | None = DocumentedField(
+        description="Milestone id this task belongs to.",
+        examples=["ms_abc123", None],
+        default=None,
+    )
+
+
+class UpdateMilestone(BaseModel):
+    title: str | None = DocumentedField(
+        description="Updated milestone title.",
+        examples=["QA signoff complete"],
+        default=None,
+    )
+    due_date: str | None = DocumentedField(
+        description="Updated milestone due date.",
+        examples=["2026-06-15", None],
+        default=None,
+    )
+    status: str | None = DocumentedField(
+        description="Updated milestone status.",
+        examples=["planned", "in_progress", "done"],
+        default=None,
+    )
+    order_index: int | None = DocumentedField(
+        description="Updated display order index.",
+        examples=[3, None],
         default=None,
     )

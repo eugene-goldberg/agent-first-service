@@ -35,6 +35,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import os
 import sys
 from io import TextIOWrapper
 from pathlib import Path
@@ -68,7 +69,25 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="Host interface to bind when running in --sse mode "
         "(default: 127.0.0.1).",
     )
+    parser.add_argument(
+        "--seed-from",
+        type=Path,
+        default=Path(os.environ["PEOPLE_SEED"]) if os.environ.get("PEOPLE_SEED") else None,
+        help="Optional JSON seed file to preload people records before serving.",
+    )
     return parser.parse_args(argv)
+
+
+def _seed_if_requested(sqlite_path: Path, seed_from: Path | None) -> None:
+    if seed_from is None:
+        return
+    from services.people.db import Base, make_engine, make_sessionmaker
+    from services.people.seed import load_seed
+
+    engine = make_engine(f"sqlite:///{sqlite_path}")
+    Base.metadata.create_all(engine)
+    session_maker = make_sessionmaker(engine)
+    load_seed(session_maker, str(seed_from))
 
 
 async def _run_stdio(sqlite_path: Path) -> None:
@@ -112,6 +131,7 @@ async def _run_sse(sqlite_path: Path, host: str, port: int) -> None:
 
 def main(argv: list[str] | None = None) -> None:
     args = _parse_args(argv)
+    _seed_if_requested(args.sqlite_path, args.seed_from)
     if args.sse:
         asyncio.run(_run_sse(args.sqlite_path, args.host, args.port))
     else:

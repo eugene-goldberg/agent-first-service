@@ -78,7 +78,16 @@ Your job: given a natural-language brief, produce a short JSON plan like:
   ...
 ]}}
 
-Keep the plan to 6 steps or fewer. Return ONLY the JSON."""
+Keep the plan to 8 steps or fewer.
+
+For project-planning briefs, strongly prefer this sequence:
+1) create project
+2) create milestones
+3) create tasks linked to milestones
+4) look up people
+5) assign tasks only when the person exists and is available
+
+If no valid person is found, leave the task unassigned and continue."""
 
 
 ACTOR_SYSTEM_MCP = """You are executing the plan one step at a time via MCP tools/call.
@@ -91,6 +100,9 @@ Hard rules:
 - The ``arguments`` keys MUST match the required/optional argument names shown in the ``tool_schemas`` field of the user message. Do NOT invent field names (e.g. do not send ``name`` if the schema lists ``title``).
 - If an earlier observation returned an error envelope (status=error or content._why), do NOT retry the same call — pick a different tool or signal completion.
 - If the brief cannot be fulfilled with the available tools, emit is_final:true with a summary explaining what was accomplished and what's out of scope.
+- Before assigning task assignees, call a People lookup tool first.
+- Only assign when People lookup confirms person exists and is available.
+- If assignment fails validation, leave task unassigned and continue execution.
 
 When you believe all necessary work is done, emit {"is_final": true, "summary": "one-sentence result"}."""
 
@@ -129,6 +141,8 @@ class OrchestrationGraph:
         *,
         persist_event: Callable[[TraceEvent], Awaitable[None]] | None = None,
     ) -> OrchestrationState:
+        created_project_ids: list[str] = []
+
         async def emit(event: TraceEvent) -> None:
             state.trace.append(event)
             await self._bus.publish(event)
@@ -231,14 +245,23 @@ class OrchestrationGraph:
 
             if decision.get("is_final"):
                 summary = decision.get("summary", "done")
+                assignment_note = ""
+                if self._mode == "mcp":
+                    assigned = await self._run_assignment_pass(
+                        created_project_ids=created_project_ids,
+                        job_id=state.job_id,
+                        emit=emit,
+                    )
+                    if assigned > 0:
+                        assignment_note = f" Assigned {assigned} task(s) to available people."
                 await emit(TraceEvent(
                     job_id=state.job_id,
                     kind="final",
-                    summary=summary,
-                    detail=_with_llm_path({"summary": summary}, act_response),
+                    summary=f"{summary}{assignment_note}",
+                    detail=_with_llm_path({"summary": f"{summary}{assignment_note}"}, act_response),
                 ))
                 state.completed = True
-                state.final_summary = summary
+                state.final_summary = f"{summary}{assignment_note}"
                 return state
 
             if self._mode == "mcp":
@@ -262,6 +285,15 @@ class OrchestrationGraph:
 
                 observation = await self._dispatch(step)
                 obs_status = observation.get("status", "error")
+                if (
+                    step.server == "projects"
+                    and step.tool == "post_projects"
+                    and obs_status == "ok"
+                ):
+                    project = observation.get("content", {}).get("data", {})
+                    project_id = project.get("id")
+                    if isinstance(project_id, str):
+                        created_project_ids.append(project_id)
                 await emit(TraceEvent(
                     job_id=state.job_id,
                     kind="observation",
@@ -310,15 +342,127 @@ class OrchestrationGraph:
         ]
         fin = self._llm.invoke(step="finalize", messages=fin_messages)
         summary = fin["content"].strip()
+        assignment_note = ""
+        if self._mode == "mcp":
+            assigned = await self._run_assignment_pass(
+                created_project_ids=created_project_ids,
+                job_id=state.job_id,
+                emit=emit,
+            )
+            if assigned > 0:
+                assignment_note = f" Assigned {assigned} task(s) to available people."
         await emit(TraceEvent(
             job_id=state.job_id,
             kind="final",
-            summary=summary,
-            detail=_with_llm_path({"summary": summary, "reason": "max_steps_reached"}, fin),
+            summary=f"{summary}{assignment_note}",
+            detail=_with_llm_path(
+                {"summary": f"{summary}{assignment_note}", "reason": "max_steps_reached"},
+                fin,
+            ),
         ))
         state.completed = True
-        state.final_summary = summary
+        state.final_summary = f"{summary}{assignment_note}"
         return state
+
+    async def _run_assignment_pass(
+        self,
+        *,
+        created_project_ids: list[str],
+        job_id: str,
+        emit: Callable[[TraceEvent], Awaitable[None]],
+    ) -> int:
+        if self._mode != "mcp" or self._mcp_toolbox is None or not created_project_ids:
+            return 0
+
+        people_obs = await self._mcp_toolbox.call_tool("people", "list_people", {})
+        await emit(
+            TraceEvent(
+                job_id=job_id,
+                kind="observation",
+                summary="Assignment pass: fetched available people.",
+                detail=people_obs,
+            )
+        )
+        people: list[dict[str, Any]] = []
+        if people_obs.get("status") == "ok":
+            raw_people = people_obs.get("content", {}).get("data", [])
+            if isinstance(raw_people, list):
+                people = [p for p in raw_people if isinstance(p, dict)]
+
+        if not people:
+            filtered_obs = await self._mcp_toolbox.call_tool(
+                "people", "filter_by_availability", {"available": "true"}
+            )
+            await emit(
+                TraceEvent(
+                    job_id=job_id,
+                    kind="observation",
+                    summary="Assignment pass: fallback filter_by_availability.",
+                    detail=filtered_obs,
+                )
+            )
+            if filtered_obs.get("status") != "ok":
+                return 0
+            raw_people = filtered_obs.get("content", {}).get("data", [])
+            if not isinstance(raw_people, list) or not raw_people:
+                return 0
+            people = [p for p in raw_people if isinstance(p, dict)]
+            if not people:
+                return 0
+        available_people = [
+            p for p in people if isinstance(p, dict) and p.get("id") and p.get("available", False)
+        ]
+        if not available_people:
+            return 0
+
+        assigned = 0
+        idx = 0
+        for project_id in created_project_ids:
+            tasks_obs = await self._mcp_toolbox.call_tool(
+                "projects", "get_projects_id_tasks", {"project_id": project_id}
+            )
+            if tasks_obs.get("status") != "ok":
+                continue
+            tasks = tasks_obs.get("content", {}).get("data", [])
+            if not isinstance(tasks, list):
+                continue
+            for task in tasks:
+                if not isinstance(task, dict):
+                    continue
+                if task.get("assignee_id"):
+                    continue
+                task_id = task.get("id")
+                if not isinstance(task_id, str):
+                    continue
+                person = available_people[idx % len(available_people)]
+                idx += 1
+                person_id = person.get("id")
+                if not isinstance(person_id, str):
+                    continue
+                await emit(
+                    TraceEvent(
+                        job_id=job_id,
+                        kind="action",
+                        summary=f"projects.patch_tasks_id (assignment pass) for {task_id}",
+                        detail={"server": "projects", "tool": "patch_tasks_id", "arguments": {"task_id": task_id, "assignee_id": person_id}},
+                    )
+                )
+                patch_obs = await self._mcp_toolbox.call_tool(
+                    "projects",
+                    "patch_tasks_id",
+                    {"task_id": task_id, "assignee_id": person_id},
+                )
+                await emit(
+                    TraceEvent(
+                        job_id=job_id,
+                        kind="observation",
+                        summary=f"Assignment pass result for task {task_id}",
+                        detail=patch_obs,
+                    )
+                )
+                if patch_obs.get("status") == "ok":
+                    assigned += 1
+        return assigned
 
     async def _dispatch(self, step: OrchestrationStep) -> dict[str, Any]:
         if self._mode == "mcp":

@@ -13,9 +13,11 @@ def test_capabilities_endpoint_returns_catalog(sqlite_path):
     body = r.json()
     assert body["service"] == "Projects"
     assert body["_self"] == "/"
-    assert body["_related"] == ["/projects", "/tasks"]
+    assert body["_related"] == ["/projects", "/tasks", "/milestones"]
     assert isinstance(body["capabilities"], list)
     assert any(cap["path"] == "/projects" and cap["method"] == "POST"
                for cap in body["capabilities"])
     assert any(cap["path"] == "/projects/{id}/tasks" and cap["method"] == "POST"
+               for cap in body["capabilities"])
+    assert any(cap["path"] == "/projects/{id}/milestones" and cap["method"] == "POST"
                for cap in body["capabilities"])
